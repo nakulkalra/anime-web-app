@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "es6",                   // Specifies the JavaScript language version for the output files
+      "module": "commonjs",              // Specifies module code generation - CommonJS for Node.js backend
+      "outDir": "./dist",       // Directory where output files are emitted
+      "rootDir": "./src",                   // Directory that is the root of the project
+      "strict": true,                    // Enable all strict type-checking options
+      "noImplicitAny": true,             // Raise error on expressions and declarations with an implied 'any' type
+      "moduleResolution": "node",        // Use 'node' module resolution strategy
+      "esModuleInterop": true,           // Allow importing ES modules via CommonJS
+      "forceConsistentCasingInFileNames": true,  // Ensure consistent casing in file names
+      "typeRoots": ["./node_modules/@types", "./types"],  // Path to typescript definitions
+      "resolveJsonModule": true          // Allows importing JSON files
+    },
+    "exclude": ["node_modules"]  // Exclude files or directories from compilation
+  }
+  
