@@ -1,32 +1,41 @@
-import express, { Request, Response, NextFunction } from 'express';
-import * as dotenv from 'dotenv';
-import login from './routes/auth/login';
+import express, { Request, Response }  from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import login from './routes/Auth/login';
+import auth from './routes/Auth/auth';
+import cookieParser from 'cookie-parser';
 
-// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// Middleware for parsing JSON requests
+  app.use(
+    cors({
+      origin: 'http://localhost:3000',
+      credentials: true,
+    })
+  );
+
+
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser(process.env.COOKIE_SECRET || "siodhfoids")); 
 
-// Import routes
 
-// Use routes
+//Auth
+app.use('/', auth)
 app.use('/', login);
 
-// Error handling middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    console.error(err.stack);
-    res.status(500).send({
-        status: 'error',
-        message: 'Something went wrong!',
-    });
+
+
+
+
+
+app.get('/', (req:Request, res:Response) => {
+  res.json({message:"Welcome to the Express server!"});
 });
 
-// Start server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
