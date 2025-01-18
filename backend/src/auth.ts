@@ -187,4 +187,124 @@ export const authenticate: RequestHandler = async (
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+export const adminAuthenticate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const accessToken = req.cookies.adminAccessToken;
+    const refreshToken = req.cookies.adminRefreshToken;
+
+    console.log('[DEBUG] Incoming cookies:', {
+      adminAccessToken: accessToken ? 'present' : 'missing',
+      adminRefreshToken: refreshToken ? 'present' : 'missing',
+    });
+
+    if (!accessToken) {
+      if (!refreshToken) {
+        console.log('[DEBUG] No tokens provided');
+        res.status(401).json({ error: 'No tokens provided' });
+        return;
+      }
+
+      console.log('[DEBUG] Access token missing, attempting to validate refresh token...');
+      try {
+        // Fetch the hashed refresh token from the database
+        const storedToken = await prisma.adminRefreshToken.findFirst({
+          where: {
+            expiresAt: { gt: new Date() }, // Check if the token is not expired
+          },
+          include: { admin: true },
+        });
+
+        console.log('[DEBUG] Stored refresh token found:', !!storedToken);
+
+        if (!storedToken) {
+          console.log('[DEBUG] Refresh token not found or expired in the database');
+          res.status(401).json({ error: 'Invalid or expired refresh token' });
+          return;
+        }
+
+        // Compare the plain refresh token with the hashed version in the database
+        const isTokenValid = await bcrypt.compare(refreshToken, storedToken.token);
+        if (!isTokenValid) {
+          console.log('[DEBUG] Refresh token validation failed');
+          res.status(401).json({ error: 'Invalid or expired refresh token' });
+          return;
+        }
+
+        console.log('[DEBUG] Refresh token validated successfully');
+        const decodedRefresh = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { id: number };
+
+        console.log('[DEBUG] Decoded refresh token payload:', decodedRefresh);
+
+        const newAccessToken = jwt.sign(
+          { id: decodedRefresh.id, role: storedToken.admin.role },
+          JWT_SECRET,
+          { expiresIn: '15m' } // New access token expiry
+        );
+
+        console.log('[DEBUG] New access token generated:', newAccessToken);
+
+        res.cookie('adminAccessToken', newAccessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 15 * 60 * 1000, // 15 minutes
+        });
+
+        req.admin = { id: storedToken.admin.id, email: storedToken.admin.email };
+        console.log('[DEBUG] Request admin details set:', req.admin);
+        return next();
+      } catch (error) {
+        console.error('[DEBUG] Error during refresh token validation:', error);
+        res.status(401).json({ error: 'Invalid or expired refresh token' });
+        return;
+      }
+    }
+
+    console.log('[DEBUG] Access token present, attempting to validate...');
+    try {
+      const decoded = jwt.verify(accessToken, JWT_SECRET) as { id: number, role: string };
+      console.log('[DEBUG] Access token validated successfully:', decoded);
+
+      req.admin = { id: decoded.id };
+      console.log('[DEBUG] Request admin details set:', req.admin);
+      return next();
+    } catch (error) {
+      console.error('[DEBUG] Invalid or expired access token:', error);
+      res.status(401).json({ error: 'Invalid or expired access token' });
+      return;
+    }
+  } catch (error) {
+    console.error('[DEBUG] Middleware encountered an error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const logAdminRole = (req: Request, res: Response): void => {
+  try {
+    // Retrieve the access token from cookies
+    const accessToken = req.cookies.adminAccessToken;
+
+    if (!accessToken) {
+      console.log('[DEBUG] No access token provided');
+      res.status(400).json({ error: 'Access token is missing' });
+      return;
+    }
+
+    // Verify and decode the token
+    const decoded = jwt.verify(accessToken, JWT_SECRET) as { role: string };
+
+    // Log the role
+    console.log('[DEBUG] Admin Role:', decoded.role);
+
+    // Respond with success or proceed as needed
+    res.status(200).json({ message: 'Role logged successfully', role: decoded.role });
+  } catch (error:any) {
+    console.error('[DEBUG] Error decoding token:', error.message);
+    res.status(401).json({ error: 'Invalid or expired access token' });
+  }
+};
+
 

@@ -26,3 +26,29 @@ model RefreshToken {
   expiresAt   DateTime
   user        User     @relation(fields: [userId], references: [id])
 }
+
+enum AdminRole {
+  GOD
+  MANAGER
+  HELPER
+}
+
+model Admin {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  name         String?
+  role         AdminRole
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  refreshTokens AdminRefreshToken[]
+}
+
+model AdminRefreshToken {
+  id           Int           @id @default(autoincrement())
+  token        String
+  expiresAt    DateTime
+  adminId      Int
+  admin        Admin         @relation(fields: [adminId], references: [id])
+}

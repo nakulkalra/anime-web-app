@@ -1,10 +1,10 @@
 import cookieParser from 'cookie-parser';
-import express, { Request, RequestHandler, Response, Router } from 'express';
+import express, { NextFunction, Request, RequestHandler, Response, Router } from 'express';
 import { z } from 'zod';
 import { authenticate, login, signup } from '../../auth';
 import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma';
-
+import bcrypt from 'bcrypt'
 
 const router:Router = express.Router();
 router.use(cookieParser(process.env.COOKIE_SECRET));
@@ -91,8 +91,49 @@ router.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-router.post('/api/logout', async (req, res) => {
+// const { PrismaClient } = require('@prisma/client');
+// const bcrypt = require('bcrypt');
+// const prisma = new PrismaClient();
+
+router.post('/api/logout', async (req, res):Promise<void> => {
   try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      res.status(400).json({ message: 'Refresh token not provided' });
+      return
+    }
+
+    const storedToken = await prisma.refreshToken.findFirst({
+      where: {
+        expiresAt: { gt: new Date() }, // Only consider non-expired tokens
+      },
+      orderBy: {
+        expiresAt: 'desc', // Sort by expiration date in descending order
+      },
+    });
+    
+
+    if (!storedToken) {
+      res.status(404).json({ message: 'No valid refresh token found in database' });
+      return
+    }
+
+    // Compare the incoming refresh token with the stored hashed token
+    const isValid = await bcrypt.compare(refreshToken, storedToken.token);
+    if (!isValid) {
+      res.status(401).json({ message: 'Invalid refresh token' });
+      return
+    }
+
+    // Delete the matched refresh token from the database
+    await prisma.refreshToken.delete({
+      where: {
+        id: storedToken.id,
+      },
+    });
+
+    // Clear cookies
     res.clearCookie('accessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -106,15 +147,13 @@ router.post('/api/logout', async (req, res) => {
       path: '/',
     });
 
-    // Simulate async operation
-    // await new Promise(resolve => setTimeout(resolve, 100));
-
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Error during logout:', error);
     res.status(500).json({ message: 'An error occurred during logout' });
   }
 });
+
 
 
 // Check session route handler
@@ -128,5 +167,6 @@ const checkSession: RequestHandler = (req, res) => {
 
 // Route registration
 router.get('/api/check-session', authenticate, checkSession);
+
 
 export default router;
