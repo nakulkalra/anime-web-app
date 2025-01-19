@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { UserPayload } from './types/express';
+import { error } from 'console';
 
 dotenv.config();
 
@@ -62,7 +63,7 @@ export async function login(email: string, password: string) {
     });
 
     if (!user) throw new Error('User not found');
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password!);
     if (!isPasswordValid) throw new Error('Invalid password');
 
     const { password: _, ...userWithoutPassword } = user;
@@ -81,11 +82,10 @@ function generateAccessToken(userId: number, email: string) {
 
 async function generateAndSaveRefreshToken(userId: number) {
   const refreshToken = jwt.sign({ id: userId }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY });
-  const hashedToken = await bcrypt.hash(refreshToken, 10);
 
   await prisma.refreshToken.create({
     data: {
-      token: hashedToken,
+      token: refreshToken,  // Store the raw refresh token directly in the DB
       userId,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     },
@@ -93,11 +93,109 @@ async function generateAndSaveRefreshToken(userId: number) {
 
   return refreshToken;
 }
+
+
+
+// export const authenticate: RequestHandler = async (
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const accessToken = req.cookies.accessToken;
+//     const refreshToken = req.cookies.refreshToken;
+
+//     console.log('[DEBUG] Cookies received:', {
+//       accessToken: accessToken ? 'present' : 'missing',
+//       refreshToken: refreshToken ? 'present' : 'missing',
+//     });
+
+//     if (!accessToken && refreshToken) {
+//       console.log('[DEBUG] Access token missing, refresh token available. Attempting refresh flow...');
+//     }
+
+//     if (!accessToken) {
+//       if (!refreshToken) {
+//         console.log('[DEBUG] No tokens provided');
+//         res.status(401).json({ error: 'No tokens provided' });
+//         return;
+//       }
+
+//       console.log('[DEBUG] Refresh token detected. Validating...');
+//       try {
+//         const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+//         console.log('[DEBUG] Hashed refresh token for DB check:', hashedRefreshToken);
+
+//         const storedToken = await prisma.refreshToken.findFirst({
+//           where: {
+//             expiresAt: { gt: new Date() },
+//           },
+//           include: { user: true },
+//         });
+
+//         console.log('[DEBUG] Stored token found:', !!storedToken);
+//         if (storedToken) {
+//           console.log('[DEBUG] Stored token details:', {
+//             token: storedToken.token,
+//             userId: storedToken.userId,
+//             expiresAt: storedToken.expiresAt,
+//           });
+//         }
+
+//         if (!storedToken || !(await bcrypt.compare(refreshToken, storedToken.token))) {
+//           console.log('[DEBUG] Refresh token validation failed');
+//           res.status(401).json({ error: 'Invalid refresh token' });
+//           return;
+//         }
+
+//         console.log('[DEBUG] Refresh token validated successfully');
+//         const decodedRefresh = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as UserPayload;
+
+//         console.log('[DEBUG] Refresh token decoded:', decodedRefresh);
+//         const newAccessToken = generateAccessToken(decodedRefresh.id, storedToken.user.email);
+
+//         console.log('[DEBUG] New access token generated:', newAccessToken);
+
+//         res.cookie('accessToken', newAccessToken, {
+//           httpOnly: true,
+//           secure: process.env.NODE_ENV === 'production',
+//           maxAge: 60 * 1000, // 1 minute for testing
+//         });
+
+//         req.user = {
+//           id: storedToken.user.id,
+//           email: storedToken.user.email,
+//         };
+
+//         next();
+//       } catch (refreshError) {
+//         console.log('[DEBUG] Error validating refresh token:', refreshError);
+//         res.status(401).json({ error: 'Invalid or expired refresh token' });
+//       }
+//     } else {
+//       try {
+//         console.log('[DEBUG] Attempting to verify access token...');
+//         const decoded = jwt.verify(accessToken, JWT_SECRET) as UserPayload;
+
+//         console.log('[DEBUG] Access token verified successfully:', decoded);
+//         req.user = decoded;
+//         next();
+//       } catch (error) {
+//         console.log('[DEBUG] Access token verification failed:', error);
+//         res.status(401).json({ error: 'Invalid or expired access token' });
+//       }
+//     }
+//   } catch (error) {
+//     console.error('[DEBUG] Middleware error:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
 export const authenticate: RequestHandler = async (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+):Promise<void> => {
   try {
     const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
@@ -120,40 +218,48 @@ export const authenticate: RequestHandler = async (
 
       console.log('[DEBUG] Refresh token detected. Validating...');
       try {
-        const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
-        console.log('[DEBUG] Hashed refresh token for DB check:', hashedRefreshToken);
-
+        // Retrieve the refresh token from the database without hashing it again
         const storedToken = await prisma.refreshToken.findFirst({
           where: {
+            token: refreshToken,  // Direct match with the refresh token received from the client
             expiresAt: { gt: new Date() },
+            revoked: false,
           },
           include: { user: true },
         });
 
-        console.log('[DEBUG] Stored token found:', !!storedToken);
-        if (storedToken) {
-          console.log('[DEBUG] Stored token details:', {
-            token: storedToken.token,
-            userId: storedToken.userId,
-            expiresAt: storedToken.expiresAt,
-          });
+        if (!storedToken) {
+          console.log('[DEBUG] Stored token found: false');
+          res.status(401).json({ error: 'Invalid refresh token' });
+          return
         }
 
-        if (!storedToken || !(await bcrypt.compare(refreshToken, storedToken.token))) {
+        console.log('[DEBUG] Stored token details:', {
+          token: storedToken.token,
+          userId: storedToken.userId,
+          expiresAt: storedToken.expiresAt,
+        });
+
+        // Validate the refresh token using the stored token (raw token from database)
+        if (refreshToken !== storedToken.token) {
           console.log('[DEBUG] Refresh token validation failed');
-          res.status(401).json({ error: 'Invalid refresh token' });
-          return;
+           res.status(401).json({ error: 'Invalid refresh token' });
+           return;
         }
 
         console.log('[DEBUG] Refresh token validated successfully');
         const decodedRefresh = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as UserPayload;
 
         console.log('[DEBUG] Refresh token decoded:', decodedRefresh);
-        const newAccessToken = generateAccessToken(decodedRefresh.id, storedToken.user.email);
+
+        // Generate a new access token using the stored user's details
+        const newAccessToken = jwt.sign({ id: decodedRefresh.id, email: storedToken.user.email }, process.env.JWT_SECRET!, {
+          expiresIn: "1h",
+        });
 
         console.log('[DEBUG] New access token generated:', newAccessToken);
 
-        res.cookie('accessToken', newAccessToken, {
+        res.cookie("accessToken", newAccessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           maxAge: 60 * 1000, // 1 minute for testing
@@ -172,7 +278,7 @@ export const authenticate: RequestHandler = async (
     } else {
       try {
         console.log('[DEBUG] Attempting to verify access token...');
-        const decoded = jwt.verify(accessToken, JWT_SECRET) as UserPayload;
+        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET!) as UserPayload;
 
         console.log('[DEBUG] Access token verified successfully:', decoded);
         req.user = decoded;
@@ -187,6 +293,9 @@ export const authenticate: RequestHandler = async (
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+
+
 export const adminAuthenticate = async (
   req: Request,
   res: Response,

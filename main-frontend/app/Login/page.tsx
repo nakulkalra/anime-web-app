@@ -5,7 +5,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Mail, Lock, User } from 'lucide-react';
+import { Separator } from "@/components/ui/separator";
+import { 
+  Mail, 
+  Lock, 
+  User, 
+  Chrome,
+  AlertCircle,
+  CheckCircle2
+} from 'lucide-react';
+import { FaDiscord } from 'react-icons/fa';
+
 
 interface LoginData {
   email: string;
@@ -20,10 +30,8 @@ interface SignupData {
 
 const Login = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
-
   const [loginData, setLoginData] = useState<LoginData>({ email: '', password: '' });
   const [signupData, setSignupData] = useState<SignupData>({ email: '', name: '', password: '' });
-
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
 
@@ -52,7 +60,7 @@ const Login = () => {
       } else {
         setSuccess('Login successful!');
         setError('');
-        window.location.href = `/`;
+        window.location.href = '/';
       }
     } catch (error) {
       setError('Login failed');
@@ -80,25 +88,29 @@ const Login = () => {
     }
   };
 
+  const handleSocialLogin = (provider: 'google' | 'discord') => {
+    window.location.href = `http://localhost:4000/auth/${provider}`;
+  };
+
   return (
-    <div className="flex justify-center items-center min-h-screen bg-black">
-      <Card className="w-full max-w-md mx-4 bg-zinc-900 border-zinc-800">
-        <CardContent className="p-6">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      <Card className="w-full max-w-md mx-4 bg-white/80 dark:bg-gray-800/90 backdrop-blur-sm shadow-xl border-0">
+        <CardContent className="p-8">
           <Tabs
             value={activeTab}
             onValueChange={(value) => setActiveTab(value as 'login' | 'signup')}
-            className="space-y-6"
+            className="space-y-8"
           >
-            <TabsList className="grid grid-cols-2 w-full bg-zinc-800">
+            <TabsList className="grid grid-cols-2 w-full bg-gray-100 dark:bg-gray-700/50 p-1 rounded-lg">
               <TabsTrigger
                 value="login"
-                className="data-[state=active]:bg-zinc-700"
+                className="rounded-md px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-white"
               >
                 Login
               </TabsTrigger>
               <TabsTrigger
                 value="signup"
-                className="data-[state=active]:bg-zinc-700"
+                className="rounded-md px-4 py-2 text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-gray-600 data-[state=active]:text-blue-600 dark:data-[state=active]:text-white"
               >
                 Sign Up
               </TabsTrigger>
@@ -106,36 +118,77 @@ const Login = () => {
 
             <TabsContent value="login" className="space-y-6">
               <div className="text-center">
-                <h2 className="text-2xl font-semibold text-white mb-2">Welcome Back</h2>
-                <p className="text-zinc-400">Enter your credentials to access your account</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
+                <p className="mt-2 text-gray-600 dark:text-gray-400">Enter your credentials to access your account</p>
+              </div>
+
+              <div className="space-y-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => handleSocialLogin('google')}
+                  className="w-full bg-white hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Chrome className="w-5 h-5" />
+                  Continue with Google
+                </Button>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => handleSocialLogin('discord')}
+                  className="w-full bg-white hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <FaDiscord className="w-5 h-5" />
+                  Continue with Discord
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400">Or continue with</span>
+                  </div>
+                </div>
               </div>
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-zinc-500" />
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
                     placeholder="Email"
                     type="email"
                     name="email"
                     value={loginData.email}
                     onChange={handleInputChange}
-                    className="pl-10 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                    className="pl-10 bg-white dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-zinc-500" />
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
                     placeholder="Password"
                     type="password"
                     name="password"
                     value={loginData.password}
                     onChange={handleInputChange}
-                    className="pl-10 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                    className="pl-10 bg-white dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                {error && <p className="text-red-500">{error}</p>}
-                {success && <p className="text-green-500">{success}</p>}
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                {error && (
+                  <div className="flex items-center gap-2 text-red-500">
+                    <AlertCircle className="w-4 h-4" />
+                    <p>{error}</p>
+                  </div>
+                )}
+                {success && (
+                  <div className="flex items-center gap-2 text-green-500">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <p>{success}</p>
+                  </div>
+                )}
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors">
                   Login
                 </Button>
               </form>
@@ -143,46 +196,87 @@ const Login = () => {
 
             <TabsContent value="signup" className="space-y-6">
               <div className="text-center">
-                <h2 className="text-2xl font-semibold text-white mb-2">Create Account</h2>
-                <p className="text-zinc-400">Sign up for a new account</p>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Account</h2>
+                <p className="mt-2 text-gray-600 dark:text-gray-400">Sign up for a new account</p>
+              </div>
+
+              <div className="space-y-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => handleSocialLogin('google')}
+                  className="w-full bg-white hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Chrome className="w-5 h-5" />
+                  Continue with Google
+                </Button>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => handleSocialLogin('discord')}
+                  className="w-full bg-white hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <FaDiscord className="w-5 h-5" />
+                  Continue with Discord
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400">Or continue with</span>
+                  </div>
+                </div>
               </div>
 
               <form onSubmit={handleSignupSubmit} className="space-y-4">
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-5 w-5 text-zinc-500" />
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
                     placeholder="Email"
                     type="email"
                     name="email"
                     value={signupData.email}
                     onChange={handleInputChange}
-                    className="pl-10 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                    className="pl-10 bg-white dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="relative">
-                  <User className="absolute left-3 top-3 h-5 w-5 text-zinc-500" />
+                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
-                    placeholder="name"
+                    placeholder="Name"
                     name="name"
                     value={signupData.name}
                     onChange={handleInputChange}
-                    className="pl-10 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                    className="pl-10 bg-white dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-zinc-500" />
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <Input
                     placeholder="Password"
                     type="password"
                     name="password"
                     value={signupData.password}
                     onChange={handleInputChange}
-                    className="pl-10 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                    className="pl-10 bg-white dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-                {error && <p className="text-red-500">{error}</p>}
-                {success && <p className="text-green-500">{success}</p>}
-                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                {error && (
+                  <div className="flex items-center gap-2 text-red-500">
+                    <AlertCircle className="w-4 h-4" />
+                    <p>{error}</p>
+                  </div>
+                )}
+                {success && (
+                  <div className="flex items-center gap-2 text-green-500">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <p>{success}</p>
+                  </div>
+                )}
+                <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors">
                   Sign Up
                 </Button>
               </form>
