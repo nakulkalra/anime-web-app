@@ -58,16 +58,48 @@ router.get("/auth/google/callback",
     }
   }
 );
+router.get("/auth/discord/callback",
+  passport.authenticate("discord", {
+    failureRedirect: "/login",
+    session: false,
+  }),
+  async (req, res) => {
+    try {
+      const user = req.user as UserPayload;
+      console.log("User authenticated via Discord:", user);
 
+      // Generate the access token for the user
+      const accessToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, {
+        expiresIn: "1h",
+      });
+      console.log("Access token generated:", accessToken);
 
-// Logout
-router.get("/auth/logout", (req, res) => {
-  res.clearCookie("accessToken");
-  res.clearCookie("refreshToken");
-  req.logout(() => {
-    res.redirect("http://localhost:3000/");
-  });
-});
+      // Generate a raw refresh token
+      const rawRefreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET!, { expiresIn: "7d" });
+      console.log("Raw refresh token:", rawRefreshToken);
+
+      // Save the raw refresh token to the database (no hashing)
+      await prisma.refreshToken.create({
+        data: {
+          token: rawRefreshToken, // Store raw refresh token directly in the DB
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+      console.log("Refresh token saved to database");
+
+      // Set cookies for access and refresh tokens
+      res.cookie("accessToken", accessToken, { httpOnly: true });
+      res.cookie("refreshToken", rawRefreshToken, { httpOnly: true });
+      console.log("Cookies set");
+
+      res.redirect("http://localhost:3000/"); // Redirect to your frontend
+    } catch (error) {
+      console.error("Error in /auth/discord/callback:", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
 
 
 export default router;

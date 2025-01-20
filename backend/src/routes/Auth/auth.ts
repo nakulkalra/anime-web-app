@@ -94,36 +94,29 @@ router.post('/api/auth/signup', async (req, res) => {
 // const { PrismaClient } = require('@prisma/client');
 // const bcrypt = require('bcrypt');
 // const prisma = new PrismaClient();
-
-router.post('/api/logout', async (req, res):Promise<void> => {
+router.post('/api/logout', async (req, res): Promise<void> => {
   try {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
       res.status(400).json({ message: 'Refresh token not provided' });
-      return
+      return;
     }
 
+    // Find the refresh token in the database
     const storedToken = await prisma.refreshToken.findFirst({
       where: {
+        token: refreshToken, // Compare directly with the raw refresh token
         expiresAt: { gt: new Date() }, // Only consider non-expired tokens
       },
       orderBy: {
         expiresAt: 'desc', // Sort by expiration date in descending order
       },
     });
-    
 
     if (!storedToken) {
       res.status(404).json({ message: 'No valid refresh token found in database' });
-      return
-    }
-
-    // Compare the incoming refresh token with the stored hashed token
-    const isValid = await bcrypt.compare(refreshToken, storedToken.token);
-    if (!isValid) {
-      res.status(401).json({ message: 'Invalid refresh token' });
-      return
+      return;
     }
 
     // Delete the matched refresh token from the database

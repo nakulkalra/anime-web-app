@@ -14,7 +14,7 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
-import { FaDiscord } from 'react-icons/fa';
+import { FaDiscord,FaGoogle } from 'react-icons/fa';
 
 
 interface LoginData {
@@ -129,7 +129,7 @@ const Login = () => {
                   onClick={() => handleSocialLogin('google')}
                   className="w-full bg-white hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  <Chrome className="w-5 h-5" />
+                  <FaGoogle className="w-5 h-5" />
                   Continue with Google
                 </Button>
                 
@@ -207,7 +207,7 @@ const Login = () => {
                   onClick={() => handleSocialLogin('google')}
                   className="w-full bg-white hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  <Chrome className="w-5 h-5" />
+                  <FaGoogle className="w-5 h-5" />
                   Continue with Google
                 </Button>
                 
