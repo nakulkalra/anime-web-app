@@ -1,10 +1,8 @@
 import cookieParser from 'cookie-parser';
-import express, { NextFunction, Request, RequestHandler, Response, Router } from 'express';
+import express, { RequestHandler, Router } from 'express';
 import { z } from 'zod';
 import { authenticate, login, signup } from '../../auth';
-import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma';
-import bcrypt from 'bcrypt'
 
 const router:Router = express.Router();
 router.use(cookieParser(process.env.COOKIE_SECRET));

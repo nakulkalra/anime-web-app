@@ -2,7 +2,6 @@
 import express, { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma';
-import bcrypt from 'bcrypt';
 import passport from 'passport';
 import { UserPayload } from '../../types/express';
 
