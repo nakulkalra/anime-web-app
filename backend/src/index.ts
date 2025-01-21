@@ -1,7 +1,6 @@
 import express, { Request, Response }  from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import login from './routes/Auth/login';
 import auth from './routes/Auth/auth';
 import cookieParser from 'cookie-parser';
 import AdminAuth from './routes/Admin/auth/verify';
@@ -10,10 +9,15 @@ import passport from "passport";
 import "./passportConfig";
 import session from "express-session";
 import PassportAuth from './routes/Auth/passportAuth';
- 
+import AdminProduct from './routes/Admin/Products/product';
+
 
 
 dotenv.config();
+
+
+const NODE_ENV = process.env.NODE_ENV; 
+
 
 const app = express();
 
@@ -43,13 +47,12 @@ app.use(passport.initialize());
 app.use(passport.session());
 //Auth
 app.use('/', auth);
-app.use('/', login);
 app.use('/', PassportAuth);
 
 //Admin
 app.use('/',AdminAuth);
 app.use('/', AdminLogin);
-
+app.use('/', AdminProduct);
 
 
 
