@@ -57,19 +57,30 @@ model AdminRefreshToken {
   admin        Admin         @relation(fields: [adminId], references: [id])
 }
 model Product {
-  id          Int      @id @default(autoincrement())
-  name        String   
+  id          Int           @id @default(autoincrement())
+  name        String
   description String?
   price       Float
-  stock       Int      @default(0)
-  isArchived  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  categoryId  Int      
+  stock       Int           @default(0)
+  isArchived  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  categoryId  Int
 
-
-  category    Category @relation(fields: [categoryId], references: [id]) // Relationship to Category
+  category    Category       @relation(fields: [categoryId], references: [id]) // Relationship to Category
+  images      ProductImage[] 
 }
+
+model ProductImage {
+  id          Int      @id @default(autoincrement())
+  url         String   
+  altText     String?  
+  createdAt   DateTime @default(now())
+  productId   Int
+
+  product     Product  @relation(fields: [productId], references: [id]) // Relationship to Product
+}
+
 
 model Category {
   id          Int       @id @default(autoincrement())
@@ -81,3 +92,15 @@ model Category {
 
   products    Product[] 
 }
+
+model UploadedFile {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  url       String   // This will store the constant URL to the uploaded file
+  mimetype  String
+  size      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+

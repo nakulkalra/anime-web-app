@@ -1,12 +1,12 @@
-"use client"
-import React, { useEffect, useState } from 'react';
+"use client";
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import axios from 'axios';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardHeader,
   CardTitle,
-  CardDescription 
+  CardDescription
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,7 @@ interface Product {
   price: number;
   stock: number;
   categoryId: number;
+  images: string[];  // Add images property
 }
 
 interface Category {
@@ -43,16 +44,243 @@ interface Category {
   name: string;
 }
 
+interface FormData {
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  categoryId: string;
+  productImages: (string | ProductImage)[];
+  imageUrl?: string;
+}
+interface ProductImage {
+  id: number;
+  url: string;
+  altText?: string;
+  createdAt: string;
+  productId: number;
+}
+
+// Memoized input component
+const FormInput = memo(({ 
+  label, 
+  type = "text", 
+  value, 
+  onChange, 
+  name, 
+  placeholder 
+}: { 
+  label: string;
+  type?: string;
+  value: string | number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  name: string;
+  placeholder: string;
+}) => (
+  <div className="space-y-2">
+    <Label htmlFor={name}>{label}</Label>
+    <Input
+      id={name}
+      name={name}
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className="w-full"
+    />
+  </div>
+));
+
+FormInput.displayName = 'FormInput';
+
+// Memoized select component
+const CategorySelect = memo(({ 
+  value, 
+  onChange, 
+  categories 
+}: { 
+  value: string;
+  onChange: (value: string) => void;
+  categories: Category[];
+}) => (
+  <div className="space-y-2">
+    <Label htmlFor="category">Category</Label>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select category" />
+      </SelectTrigger>
+      <SelectContent>
+        {categories.map((category) => (
+          <SelectItem key={category.id} value={category.id.toString()}>
+            {category.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+));
+
+CategorySelect.displayName = 'CategorySelect';
+
+// Memoized form component
+const ProductForm = memo(({ 
+  form, 
+  onFieldChange,
+  onCategoryChange,
+  onImagesChange,
+  categories 
+}: { 
+  form: FormData;
+  onFieldChange: (name: string, value: string | number) => void;
+  onCategoryChange: (value: string) => void;
+  onImagesChange: (images: string[]) => void;
+  categories: Category[];
+}) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    const processedValue = type === 'number' ? Number(value) : value;
+    onFieldChange(name, processedValue);
+  }, [onFieldChange]);
+
+  const handleImagesChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    const processedValue = type === 'number' ? Number(value) : value;
+    onFieldChange(name, processedValue);
+  }, [onImagesChange]);
+
+  return (
+    <div className="space-y-4">
+      <FormInput
+        label="Product Name"
+        name="name"
+        value={form.name}
+        onChange={handleInputChange}
+        placeholder="Enter product name"
+      />
+
+      <FormInput
+        label="Description"
+        name="description"
+        value={form.description}
+        onChange={handleInputChange}
+        placeholder="Enter product description"
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <FormInput
+          label="Price"
+          name="price"
+          type="number"
+          value={form.price}
+          onChange={handleInputChange}
+          placeholder="0.00"
+        />
+
+        <FormInput
+          label="Stock"
+          name="stock"
+          type="number"
+          value={form.stock}
+          onChange={handleInputChange}
+          placeholder="0"
+        />
+      </div>
+
+      <CategorySelect
+        value={form.categoryId}
+        onChange={onCategoryChange}
+        categories={categories}
+      />
+
+      <div className="space-y-2">
+      <FormInput
+        label="Image URLs"
+        name="imageUrl"
+        value={form.imageUrl as string}
+        onChange={handleImagesChange}
+        placeholder="Enter product urls"
+      />
+        <div className="flex gap-2 mt-2">
+          {form.productImages && form.productImages.length > 0 ? (
+            form.productImages.map((img, index) => (
+              <img 
+                key={index} 
+                src={typeof img === 'string' ? img : img.url} 
+                alt={typeof img === 'object' && img.altText ? img.altText : `Product Image ${index + 1}`} 
+                className="w-24 h-24 object-cover" 
+              />
+            ))
+          ) : (
+            <p className="text-gray-500">No images found</p>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+});
+
+ProductForm.displayName = 'ProductForm';
+
+// Memoized dialog component
+const ProductDialog = memo(({ 
+  isOpen, 
+  onOpenChange, 
+  mode,
+  form,
+  onFieldChange,
+  onCategoryChange,
+  onImagesChange,
+  onSubmit,
+  categories
+}: { 
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode: 'create' | 'edit';
+  form: FormData;
+  onFieldChange: (name: string, value: string | number) => void;
+  onCategoryChange: (value: string) => void;
+  onImagesChange: (images: string[]) => void;
+  onSubmit: () => void;
+  categories: Category[];
+}) => (
+  <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <DialogContent className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>{mode === 'create' ? 'Create New Product' : 'Edit Product'}</DialogTitle>
+      </DialogHeader>
+      <ProductForm 
+        form={form}
+        onFieldChange={onFieldChange}
+        onCategoryChange={onCategoryChange}
+        onImagesChange={onImagesChange}
+        categories={categories}
+      />
+      <DialogFooter className="flex space-x-2">
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button onClick={onSubmit}>
+          {mode === 'create' ? 'Create Product' : 'Save Changes'}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+));
+
+ProductDialog.displayName = 'ProductDialog';
+
 const AdminProductManagement: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormData>({
     name: '',
     description: '',
     price: 0,
     stock: 0,
     categoryId: '',
+    productImages: [],
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -75,17 +303,31 @@ const AdminProductManagement: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+  const handleFieldChange = useCallback((name: string, value: string | number) => {
     setForm(prev => ({ ...prev, [name]: value }));
-  };
+  }, []);
+
+  const handleCategoryChange = useCallback((value: string) => {
+    setForm(prev => ({ ...prev, categoryId: value }));
+  }, []);
+
+  const handleImagesChange = useCallback((images: string[]) => {
+    setForm(prev => ({ ...prev, productImages: images }));
+  }, []);
 
   const handleCreate = async () => {
     try {
       const response = await axios.post('http://localhost:4000/api/admin/products', form);
       setProducts(prev => [...prev, response.data.product]);
       setIsCreateDialogOpen(false);
-      setForm({ name: '', description: '', price: 0, stock: 0, categoryId: '' });
+      setForm({
+        name: '',
+        description: '',
+        price: 0,
+        stock: 0,
+        categoryId: '',
+        productImages: [],
+      });
     } catch (error) {
       console.error('Error creating product:', error);
     }
@@ -93,23 +335,30 @@ const AdminProductManagement: React.FC = () => {
 
   const handleEdit = async () => {
     if (editingProductId === null) return;
-
+  
     try {
-      const response = await axios.put(`http://localhost:4000/api/admin/products/${editingProductId}`, form);
-      setProducts(prev =>
-        prev.map(product =>
-          product.id === editingProductId ? response.data.product : product
-        )
-      );
+      await axios.put(`http://localhost:4000/api/admin/products/${editingProductId}`, form);
+      
+      // Re-fetch products
+      const productResponse = await axios.get('http://localhost:4000/api/admin/products');
+      setProducts(productResponse.data.products);
+      
       setIsEditDialogOpen(false);
       setEditingProductId(null);
-      setForm({ name: '', description: '', price: 0, stock: 0, categoryId: '' });
+      setForm({
+        name: '',
+        description: '',
+        price: 0,
+        stock: 0,
+        categoryId: '',
+        productImages: [],
+      });
     } catch (error) {
       console.error('Error editing product:', error);
     }
   };
 
-  const openEditDialog = (product: Product) => {
+  const handleEditProduct = (product: Product) => {
     setEditingProductId(product.id);
     setForm({
       name: product.name,
@@ -117,193 +366,103 @@ const AdminProductManagement: React.FC = () => {
       price: product.price,
       stock: product.stock,
       categoryId: product.categoryId.toString(),
+      productImages: product.images || [], // Use product's images or empty array
     });
     setIsEditDialogOpen(true);
   };
+  
+
+  const handleDeleteProduct = async (productId: number) => {
+    try {
+      await axios.delete(`http://localhost:4000/api/admin/products/${productId}`);
+      setProducts(prev => prev.filter(product => product.id !== productId));
+    } catch (error) {
+      console.error('Error deleting product:', error);
+    }
+  };
 
   const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  console.log(form);
 
-
-  const ProductDialog = ({ isOpen, onOpenChange, mode }: { isOpen: boolean; onOpenChange: (open: boolean) => void; mode: 'create' | 'edit' }) => (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Create New Product' : 'Edit Product'}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Product Name</Label>
-            <Input
-              id="name"
-              name="name"
-              value={form.name}
-              onChange={handleInputChange}
-              placeholder="Enter product name"
-              className="w-full"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              name="description"
-              value={form.description}
-              onChange={handleInputChange}
-              placeholder="Enter product description"
-              className="w-full"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">Price</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={form.price}
-                onChange={handleInputChange}
-                placeholder="0.00"
-                className="w-full"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                name="stock"
-                type="number"
-                value={form.stock}
-                onChange={handleInputChange}
-                placeholder="0"
-                className="w-full"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Select
-              value={form.categoryId}
-              onValueChange={(value:any) => setForm(prev => ({ ...prev, categoryId: value }))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id.toString()}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter className="flex space-x-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={mode === 'create' ? handleCreate : handleEdit}>
-            {mode === 'create' ? 'Create Product' : 'Save Changes'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <Package className="h-6 w-6" />
-              Product Management
-            </CardTitle>
-            <CardDescription>
-              Manage your product inventory and categories
-            </CardDescription>
-          </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Product
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-2 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-medium">Products</h2>
+        <Button onClick={() => setIsCreateDialogOpen(true)}><Plus className="mr-2 h-4 w-4" /> New Product</Button>
+      </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Stock Status</TableHead>
-                  <TableHead>Actions</TableHead>
+      <div className="flex items-center mb-4">
+        <Search className="w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search..."
+          className="ml-2 p-2 border rounded"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <Card>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProducts.map(product => (
+                <TableRow key={product.id}>
+                  <TableCell>{product.name}</TableCell>
+                  <TableCell>{product.description}</TableCell>
+                  <TableCell>{product.price}</TableCell>
+                  <TableCell>{product.stock}</TableCell>
+                  <TableCell>{categories.find(cat => cat.id === product.categoryId)?.name || 'Unknown'}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="icon" onClick={() => handleEditProduct(product)}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => handleDeleteProduct(product.id)}>
+                      <Package className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {product.description}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {categories.find((cat) => cat.id === product.categoryId)?.name || 'N/A'}
-                    </TableCell>
-                    <TableCell>Rs. {product.price.toFixed(2)}</TableCell>
-                    <TableCell>{product.stock}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(product)}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                        Edit
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
-      <ProductDialog 
-        isOpen={isCreateDialogOpen} 
-        onOpenChange={setIsCreateDialogOpen} 
-        mode="create" 
+      <ProductDialog
+        isOpen={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        mode="create"
+        form={form}
+        onFieldChange={handleFieldChange}
+        onCategoryChange={handleCategoryChange}
+        onImagesChange={handleImagesChange}
+        onSubmit={handleCreate}
+        categories={categories}
       />
-      
-      <ProductDialog 
-        isOpen={isEditDialogOpen} 
-        onOpenChange={setIsEditDialogOpen} 
-        mode="edit" 
+
+      <ProductDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        mode="edit"
+        form={form}
+        onFieldChange={handleFieldChange}
+        onCategoryChange={handleCategoryChange}
+        onImagesChange={handleImagesChange}
+        onSubmit={handleEdit}
+        categories={categories}
       />
     </div>
   );

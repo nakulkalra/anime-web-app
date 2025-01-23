@@ -10,8 +10,8 @@ import "./passportConfig";
 import session from "express-session";
 import PassportAuth from './routes/Auth/passportAuth';
 import AdminProduct from './routes/Admin/Products/product';
-
-
+import path from 'path';
+import AdminUpload from './routes/Admin/Uploads/upload'
 
 dotenv.config();
 
@@ -45,6 +45,14 @@ app.use(
 // Initialize passport and session middleware
 app.use(passport.initialize());
 app.use(passport.session());
+
+
+// Serve static files from the /uploads directory
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// console.log(path.join(__dirname, "../uploads"));
+
+
+
 //Auth
 app.use('/', auth);
 app.use('/', PassportAuth);
@@ -53,7 +61,7 @@ app.use('/', PassportAuth);
 app.use('/',AdminAuth);
 app.use('/', AdminLogin);
 app.use('/', AdminProduct);
-
+app.use('/', AdminUpload);
 
 
 

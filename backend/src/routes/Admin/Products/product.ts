@@ -14,37 +14,45 @@ const handleError = (res: Response, error: any, message: string) => {
     error: error instanceof Error ? error.message : error,
   });
 };
-
-// Add New Product
+// Add New Product with Images
 router.post('/api/admin/products', async (req, res):Promise<void> => {
-    let { name, description, price, stock, categoryId } = req.body;
+  let { name, description, price, stock, categoryId, productImages } = req.body;
 
-    price = parseFloat(price);
-    stock = parseInt(stock);
-    categoryId = parseInt(categoryId);
+  price = parseFloat(price);
+  stock = parseInt(stock);
+  categoryId = parseInt(categoryId);
 
-
-  // Validate required fields
-  if (!name || !price || !stock || !categoryId) {
-    res.status(400).json({
-      success: false,
-      message: 'Missing required fields: name, price, stock, or categoryId',
-    });
-    return;
+  // Ensure productImages is an array, handle empty or invalid cases
+  if (productImages) {
+      productImages = Array.isArray(productImages) ? productImages : [productImages];
+  } else {
+      productImages = [];
   }
 
-  try {
-    const product = await prisma.product.create({
-      data: { name, description, price, stock, categoryId },
-    });
+  // TypeScript type for product images (string URLs)
+  type ProductImage = { url: string };
 
-    res.status(201).json({
-      success: true,
-      message: 'Product created successfully',
-      product,
-    });
+  try {
+      const product = await prisma.product.create({
+          data: { 
+              name, 
+              description, 
+              price, 
+              stock, 
+              categoryId,
+              images: {
+                  create: productImages.map((image: string): ProductImage => ({ url: image })) // Explicit type for `image`
+              },
+          },
+      });
+
+      res.status(201).json({
+          success: true,
+          message: 'Product created successfully',
+          product,
+      });
   } catch (error) {
-    handleError(res, error, 'Failed to create product');
+      handleError(res, error, 'Failed to create product');
   }
 });
 
@@ -92,13 +100,55 @@ router.put('/api/admin/products/:id', async (req, res):Promise<void> => {
   }
 });
 
-// Get All Products (Including Archived)
-router.get('/api/admin/products', async (req: Request, res: Response) => {
-  const { includeArchived } = req.query;
+// Add New Product with Images
+router.post('/api/admin/products', async (req, res):Promise<void> => {
+  let { name, description, price, stock, categoryId, productImages } = req.body;
+
+  price = parseFloat(price);
+  stock = parseInt(stock);
+  categoryId = parseInt(categoryId);
+
+  // Ensure productImages is an array, handle empty or invalid cases
+  if (productImages) {
+      productImages = Array.isArray(productImages) ? productImages : [productImages];
+  } else {
+      productImages = [];
+  }
+
+  // TypeScript type for product images (string URLs)
+  type ProductImage = { url: string };
 
   try {
+      const product = await prisma.product.create({
+          data: { 
+              name, 
+              description, 
+              price, 
+              stock, 
+              categoryId,
+              images: {
+                  create: productImages.map((image: string): ProductImage => ({ url: image })) // Explicit type for `image`
+              },
+          },
+      });
+
+      res.status(201).json({
+          success: true,
+          message: 'Product created successfully',
+          product,
+      });
+  } catch (error) {
+      handleError(res, error, 'Failed to create product');
+  }
+});
+
+// Get All Products
+router.get('/api/admin/products', async (req: Request, res: Response) => {
+  try {
     const products = await prisma.product.findMany({
-      where: includeArchived === 'true' ? undefined : { isArchived: false },
+      include: {
+        images: true, // Include related product images
+      },
     });
 
     res.status(200).json({
