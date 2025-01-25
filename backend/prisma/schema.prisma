@@ -74,7 +74,7 @@ model Product {
 model ProductImage {
   id          Int      @id @default(autoincrement())
   url         String   
-  altText     String?  
+  altText     String?  @default("Image")
   createdAt   DateTime @default(now())
   productId   Int
 

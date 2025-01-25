@@ -1,5 +1,7 @@
 import './globals.css'; // Global CSS
-import Navbar from './Navbar/Navbar'; // Adjust the path to your Navbar component
+import Navbar from './Navbar/Navbar'; 
+import { Toaster } from "@/components/ui/toaster"
+
 
 export const metadata = {
   title: 'My App',
@@ -10,8 +12,10 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en">
       <body>
+        
         <Navbar />
         {children}
+        <Toaster />
       </body>
     </html>
   );
