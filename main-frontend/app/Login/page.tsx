@@ -15,6 +15,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { FaDiscord,FaGoogle } from 'react-icons/fa';
+import { toast } from '@/hooks/use-toast';
 
 
 interface LoginData {
@@ -33,7 +34,6 @@ const Login = () => {
   const [loginData, setLoginData] = useState<LoginData>({ email: '', password: '' });
   const [signupData, setSignupData] = useState<SignupData>({ email: '', name: '', password: '' });
   const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (activeTab === 'login') {
@@ -57,10 +57,17 @@ const Login = () => {
       const result = await response.json();
       if (!response.ok) {
         setError(result.message);
+        toast({
+          variant: "destructive",
+          title: `Error`,
+          description: `${result.error}`,
+        })
       } else {
-        setSuccess('Login successful!');
         setError('');
         window.location.href = '/';
+        toast({
+          title: "Login Successful!",
+        });
       }
     } catch (error) {
       setError('Login failed');
@@ -78,9 +85,16 @@ const Login = () => {
       });
       const result = await response.json();
       if (!response.ok) {
-        setError(result.message);
+        toast({
+          variant: "destructive",
+          title: `Error`,
+          description: `${result.error} `,
+        })
       } else {
-        setSuccess('Signup successful!');
+        window.location.href='/';
+        toast({
+          title: "Signup Successful!",
+        });
         setError('');
       }
     } catch (error) {
@@ -182,12 +196,7 @@ const Login = () => {
                     <p>{error}</p>
                   </div>
                 )}
-                {success && (
-                  <div className="flex items-center gap-2 text-green-500">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <p>{success}</p>
-                  </div>
-                )}
+                
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors">
                   Login
                 </Button>
@@ -270,12 +279,7 @@ const Login = () => {
                     <p>{error}</p>
                   </div>
                 )}
-                {success && (
-                  <div className="flex items-center gap-2 text-green-500">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <p>{success}</p>
-                  </div>
-                )}
+              
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors">
                   Sign Up
                 </Button>

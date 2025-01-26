@@ -78,12 +78,15 @@ router.post('/api/auth/signup', async (req, res) => {
     
     // Return user data without sending tokens in response body
     res.status(201).json({ user: result.user });
-  } catch (error) {
+  } catch (error:any) {
     if (error instanceof z.ZodError) {
+      // Input validation error
       res.status(400).json({ error: 'Invalid input', details: error.errors });
-    } else if (error instanceof Error) {
-      res.status(409).json({ error: error.message });
+    } else if (error.message.includes('Unique constraint failed on the fields: (`email`)')) {
+      // Handle Prisma's unique constraint error for the email field
+      res.status(409).json({ error: 'Email is already in use' });
     } else {
+      // General server error
       res.status(500).json({ error: 'Internal server error' });
     }
   }

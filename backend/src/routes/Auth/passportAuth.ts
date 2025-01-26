@@ -15,12 +15,13 @@ router.get("/auth/google", passport.authenticate("google", { scope: [ "email"] }
 router.get("/auth/discord", passport.authenticate("discord", { scope: ["identify", "email"] }));
 
 
-router.get("/auth/google/callback",
+router.get(
+  "/auth/google/callback",
   passport.authenticate("google", {
     failureRedirect: "/login",
     session: false,
   }),
-  async (req, res) => {
+  async (req, res):Promise<void> => {
     try {
       const user = req.user as UserPayload;
       console.log("User authenticated:", user);
@@ -38,7 +39,7 @@ router.get("/auth/google/callback",
       // Save the raw refresh token to the database (no hashing)
       await prisma.refreshToken.create({
         data: {
-          token: rawRefreshToken,  // Store raw refresh token directly in the DB
+          token: rawRefreshToken, // Store raw refresh token directly in the DB
           userId: user.id,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
@@ -51,18 +52,25 @@ router.get("/auth/google/callback",
       console.log("Cookies set");
 
       res.redirect("http://localhost:3000/");
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === "P2002" && error.meta?.target?.includes("email")) {
+        console.error("Error: Email already in use.");
+        res.status(409).json({ error: "Email is already associated with another account." });
+        return
+      }
       console.error("Error in /auth/google/callback:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
-router.get("/auth/discord/callback",
+
+router.get(
+  "/auth/discord/callback",
   passport.authenticate("discord", {
     failureRedirect: "/login",
     session: false,
   }),
-  async (req, res) => {
+  async (req, res):Promise<void> => {
     try {
       const user = req.user as UserPayload;
       console.log("User authenticated via Discord:", user);
@@ -92,13 +100,19 @@ router.get("/auth/discord/callback",
       res.cookie("refreshToken", rawRefreshToken, { httpOnly: true });
       console.log("Cookies set");
 
-      res.redirect("http://localhost:3000/"); // Redirect to your frontend
-    } catch (error) {
+      res.redirect("http://localhost:3000/");
+    } catch (error: any) {
+      if (error.code === "P2002" && error.meta?.target?.includes("email")) {
+        console.error("Error: Email already in use.");
+        res.status(409).json({ error: "Email is already associated with another account." });
+        return;
+      }
       console.error("Error in /auth/discord/callback:", error);
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
+
 
 
 export default router;
