@@ -12,6 +12,8 @@ import PassportAuth from './routes/Auth/passportAuth';
 import AdminProduct from './routes/Admin/Products/product';
 import path from 'path';
 import AdminUpload from './routes/Admin/Uploads/upload'
+import Products from './routes/Public/products';
+
 
 dotenv.config();
 
@@ -63,7 +65,8 @@ app.use('/', AdminLogin);
 app.use('/', AdminProduct);
 app.use('/', AdminUpload);
 
-
+//Public routes
+app.use('/', Products);
 
 
 app.get('/', (req:Request, res:Response) => {

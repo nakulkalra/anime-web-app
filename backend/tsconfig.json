@@ -9,7 +9,7 @@
       "moduleResolution": "node",        // Use 'node' module resolution strategy
       "esModuleInterop": true,           // Allow importing ES modules via CommonJS
       "forceConsistentCasingInFileNames": true,  // Ensure consistent casing in file names
-      "typeRoots": ["./node_modules/@types", "./types"],  // Path to typescript definitions
+      "typeRoots": ["./node_modules/@types", "../main-frontend/types"],  // Path to typescript definitions
       "resolveJsonModule": true          // Allows importing JSON files
     },
     "exclude": ["node_modules"]  // Exclude files or directories from compilation
