@@ -13,7 +13,7 @@ import AdminProduct from './routes/Admin/Products/product';
 import path from 'path';
 import AdminUpload from './routes/Admin/Uploads/upload'
 import Products from './routes/Public/products';
-
+import Cart from './routes/Public/cart';
 
 dotenv.config();
 
@@ -67,6 +67,7 @@ app.use('/', AdminUpload);
 
 //Public routes
 app.use('/', Products);
+app.use('/', Cart);
 
 
 app.get('/', (req:Request, res:Response) => {

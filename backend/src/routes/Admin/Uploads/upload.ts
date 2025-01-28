@@ -34,5 +34,21 @@ router.post("/api/admin/upload", upload.single("image"), async (req, res): Promi
     }
   });
   
+// New GET endpoint to fetch all uploaded files
+router.get("/api/admin/uploads", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const files = await prisma.uploadedFile.findMany({
+      orderBy: { createdAt: "desc" }, // Optional: Order by most recent files
+    });
+
+    res.status(200).json({
+      message: "Files retrieved successfully",
+      files,
+    });
+  } catch (error: any) {
+    console.error("Error fetching files:", error);
+    res.status(500).json({ error: "An unexpected error occurred" });
+  }
+});
 
 export default router;

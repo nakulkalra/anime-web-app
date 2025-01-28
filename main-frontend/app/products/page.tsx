@@ -4,13 +4,14 @@ import React, { useState, useEffect, useCallback } from "react"
 import { ProductList } from "./ProductList"
 import { SearchBar } from "./SearchBar"
 import { FilterSidebar } from "./FilterSidebar"
-import type { Product, FilterOptions } from "../../types/product"
+import type { Product, FilterOptions, Category } from "../../types/product"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ReloadIcon } from "@radix-ui/react-icons"
 import { Button } from "@/components/ui/button"
 
 export default function ProductPage() {
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [searchQuery, setSearchQuery] = useState("")
@@ -29,7 +30,8 @@ export default function ProductPage() {
         ...(currentFilters.category && { category: currentFilters.category.toString() }),
         ...(currentFilters.minPrice && { minPrice: currentFilters.minPrice.toString() }),
         ...(currentFilters.maxPrice && { maxPrice: currentFilters.maxPrice.toString() }),
-        ...(currentFilters.inStock && { inStock: currentFilters.inStock.toString() }),
+        ...(currentFilters.stockStatus &&
+          currentFilters.stockStatus.length > 0 && { stockStatus: currentFilters.stockStatus.join(",") }),
       })
 
       const response = await fetch(`http://localhost:4000/api/products?${queryParams}`)
@@ -47,35 +49,43 @@ export default function ProductPage() {
     }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/product/categories")
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories")
+      }
+      const data = await response.json()
+      setCategories(data.categories)
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+      // Optionally set an error state for categories
+    }
+  }
+
   const memoizedFetchProductData = useCallback(fetchProductData, [])
 
   useEffect(() => {
     memoizedFetchProductData(currentPage, searchQuery, filters)
   }, [currentPage, searchQuery, filters, memoizedFetchProductData])
 
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    memoizedFetchProductData(page, searchQuery, filters)
   }
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
     setCurrentPage(1)
-    memoizedFetchProductData(1, query, filters)
   }
 
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters)
     setCurrentPage(1)
-    memoizedFetchProductData(1, searchQuery, newFilters)
   }
-
-  // Mock categories for the FilterSidebar
-  const categories = [
-    { id: 1, name: "Category 1" },
-    { id: 2, name: "Category 2" },
-    { id: 3, name: "Category 3" },
-  ]
 
   if (error) {
     return (
@@ -99,7 +109,7 @@ export default function ProductPage() {
       </div>
       <div className="flex">
         <FilterSidebar categories={categories} onFilterChange={handleFilterChange} />
-        {isLoading ? ( 
+        {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> Loading...
           </div>
@@ -109,7 +119,7 @@ export default function ProductPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
-          /> 
+          />
         )}
       </div>
     </div>

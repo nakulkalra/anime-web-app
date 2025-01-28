@@ -23,6 +23,7 @@ interface ProductQuery {
   categoryId?: string;
   minPrice?: string;
   maxPrice?: string;
+  stockStatus?: string;
 }
 
 /**
@@ -38,6 +39,7 @@ router.get('/api/products', async (req: Request<{}, {}, {}, ProductQuery>, res: 
       categoryId, // Filter by category ID
       minPrice, // Minimum price filter
       maxPrice, // Maximum price filter
+      stockStatus, // New: Filter by stockStatus
     } = req.query;
 
     // Parse pagination parameters
@@ -65,6 +67,17 @@ router.get('/api/products', async (req: Request<{}, {}, {}, ProductQuery>, res: 
       };
     }
 
+    // Handle stockStatus filtering
+    if (stockStatus) {
+      if (stockStatus === 'in_stock') {
+        filters.stock = { gt: 0 }; // Filter products with stock greater than 0
+      } else if (stockStatus === 'low_stock') {
+        filters.stock = { lte: 5, gt: 0 }; // Filter products with stock between 1 and 5
+      } else if (stockStatus === 'out_of_stock') {
+        filters.stock = 0; // Filter products with 0 stock
+      }
+    }
+
     // Fetch products from the database
     const products = await prisma.product.findMany({
       where: filters,
@@ -81,9 +94,29 @@ router.get('/api/products', async (req: Request<{}, {}, {}, ProductQuery>, res: 
       where: filters,
     });
 
+    // Map through the products to modify the stock status and exclude the 'stock' field
+    const modifiedProducts = products.map(product => {
+      let stockStatus = 'in_stock'; // Default to in_stock
+
+      // Check the stock and assign the correct status
+      if (product.stock === 0) {
+        stockStatus = 'out_of_stock'; // If stock is 0, mark as out_of_stock
+      } else if (product.stock <= 5) {
+        stockStatus = 'low_stock'; // If stock is <= 5 but > 0, mark as low_stock
+      }
+
+      // Remove 'stock' field and add 'stockStatus'
+      const { stock, ...productWithoutStock } = product;
+
+      return {
+        ...productWithoutStock,
+        stockStatus, // Add the stockStatus field
+      };
+    });
+
     res.json({
       success: true,
-      data: products,
+      data: modifiedProducts,
       meta: {
         total: totalProducts,
         page: pageNumber,
@@ -93,6 +126,30 @@ router.get('/api/products', async (req: Request<{}, {}, {}, ProductQuery>, res: 
     });
   } catch (error) {
     handleError(res, error, 'Failed to fetch products');
+  }
+});
+
+
+
+
+
+// Get all categories
+router.get('/api/product/categories', async (req: Request, res: Response) => {
+  try {
+    const categories = await prisma.category.findMany(
+      {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+                
+        }
+      }
+    );
+    res.status(200).json({ categories });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Failed to fetch categories', error });
   }
 });
 

@@ -16,8 +16,8 @@ export interface Product {
     id: number
     name: string
     description: string
-    createdAt: string
-    updatedAt: string
+    createdAt?: string
+    updatedAt?: string
   }
   
   export interface Image {
@@ -44,6 +44,7 @@ export interface Product {
     minPrice?: number
     maxPrice?: number
     inStock?: boolean
+    stockStatus?: string[] 
   }
   
   

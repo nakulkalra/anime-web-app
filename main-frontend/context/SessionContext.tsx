@@ -35,7 +35,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
             });
             setSession(response.data);
           } catch (error) {
-            console.error("Error fetching session:", error);
+            // console.error("Error fetching session:", error);
             setSession(null);
           } finally {
             setLoading(false);
