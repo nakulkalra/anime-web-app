@@ -99,7 +99,7 @@ export default function ProductPage() {
       </div>
       <div className="flex">
         <FilterSidebar categories={categories} onFilterChange={handleFilterChange} />
-        {isLoading ? (
+        {isLoading ? ( 
           <div className="flex-1 flex items-center justify-center">
             <ReloadIcon className="mr-2 h-4 w-4 animate-spin" /> Loading...
           </div>
@@ -109,7 +109,7 @@ export default function ProductPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
-          />
+          /> 
         )}
       </div>
     </div>

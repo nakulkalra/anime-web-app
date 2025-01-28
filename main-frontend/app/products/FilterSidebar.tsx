@@ -48,8 +48,8 @@ export function FilterSidebar({ categories, onFilterChange }: FilterSidebarProps
           onValueChange={([min, max]) => handleFilterChange({ minPrice: min, maxPrice: max })}
         />
         <div className="flex justify-between mt-2">
-          <span>${filters.minPrice || 0}</span>
-          <span>${filters.maxPrice || 1000}</span>
+          <span>Rs. {filters.minPrice || 0}</span>
+          <span>Rs. {filters.maxPrice || 1000}</span>
         </div>
       </div>
 

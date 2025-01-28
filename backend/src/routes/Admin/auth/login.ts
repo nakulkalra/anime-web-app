@@ -46,13 +46,13 @@ router.post('/api/admin/auth/login', async (req: Request, res: Response): Promis
     // Set cookies for accessToken and refreshToken
     res.cookie('adminAccessToken', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'PRODUCTION',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('adminRefreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'PRODUCTION',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 

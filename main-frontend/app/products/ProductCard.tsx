@@ -23,7 +23,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-lg font-semibold">{product.name}</h3>
         <p className="text-sm text-gray-500 mb-2">{product.category.name}</p>
         <p className="text-sm mb-2">{product.description}</p>
-        <p className="text-lg font-bold">${product.price.toFixed(2)}</p>
+        <p className="text-lg font-bold">Rs. {product.price.toFixed(2)}</p>
       </CardContent>
       <CardFooter>
         <Button className="w-full">Add to Cart</Button>

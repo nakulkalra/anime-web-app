@@ -1,51 +1,33 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import React from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useSession } from "@/context/SessionContext";
+import { ShoppingCart } from "lucide-react";
 
 const Navbar: React.FC = () => {
-  const [user, setUser] = useState<{ email: string } | null>(null);
-
-  useEffect(() => {
-    // Fetch session data from the API
-    const checkSession = async () => {
-      try {
-        const response = await fetch('http://localhost:4000/api/check-session', {
-          method: 'GET',
-          credentials: 'include', // Ensure cookies are sent with the request
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUser({ email: data.user.email }); // Assume API returns `{ email: string }`
-        } else {
-          setUser(null); // User is not logged in
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-        setUser(null); // Handle API errors gracefully
-      }
-    };
-
-    checkSession();
-  }, []);
+  const { session, setSession } = useSession();
 
   const handleLoginClick = () => {
-    window.location.href = `/Login`;
+    window.location.href = `/Login`; 
+  };
+
+  const handleCartClick = () => {
+    window.location.href = `/cart`; 
   };
 
   const handleLogoutClick = async () => {
     try {
       // Call API to log out the user
-      await fetch('http://localhost:4000/api/logout', {
-        method: 'POST',
-        credentials: 'include',
+      await fetch("http://localhost:4000/api/logout", {
+        method: "POST",
+        credentials: "include", // Include cookies with the request
       });
 
-      setUser(null); // Clear user state
+      setSession(null); // Clear session context
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error("Error logging out:", error);
     }
   };
 
@@ -65,22 +47,33 @@ const Navbar: React.FC = () => {
           <Link href="/page1" className="text-white hover:text-gray-400">
             Page1
           </Link>
-          <Link href="/page2" className="text-white hover:text-gray-400">
-            Page2
+          <Link href="/products" className="text-white hover:text-gray-400">
+            Products
           </Link>
+        </div>
+        <div>
+          <Button variant="default" onClick={handleCartClick}>
+          <ShoppingCart className="h-5 text-white"/>
+          </Button>
         </div>
 
         {/* User Actions */}
         <div className="flex items-center space-x-4">
-          {user ? (
+          {session ? (
             <>
-              <span className="text-white">Welcome, {user.email}</span>
-              <Button onClick={handleLogoutClick} className="bg-red-800 text-white px-4 py-2 rounded hover:bg-red-500">
+              <span className="text-white">Welcome, {session.user.email}</span>
+              <Button
+                onClick={handleLogoutClick}
+                className="bg-red-800 text-white px-4 py-2 rounded hover:bg-red-500"
+              >
                 Logout
               </Button>
             </>
           ) : (
-            <Button onClick={handleLoginClick} className="bg-blue-800 text-white px-4 py-2 rounded hover:bg-blue-500">
+            <Button
+              onClick={handleLoginClick}
+              className="bg-blue-800 text-white px-4 py-2 rounded hover:bg-blue-500"
+            >
               Login
             </Button>
           )}

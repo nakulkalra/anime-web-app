@@ -11,7 +11,7 @@ interface ProductListProps {
 
 export function ProductList({ products, currentPage, totalPages, onPageChange }: ProductListProps) {
   return (
-    <div className="flex-1">
+    <div className="flex-1 ml-2">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />

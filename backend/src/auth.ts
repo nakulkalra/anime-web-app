@@ -158,7 +158,7 @@ async function generateAndSaveRefreshToken(userId: number) {
 
 //         res.cookie('accessToken', newAccessToken, {
 //           httpOnly: true,
-//           secure: process.env.NODE_ENV === 'production',
+//           secure: process.env.NODE_ENV === 'PRODUCTION',
 //           maxAge: 60 * 1000, // 1 minute for testing
 //         });
 
@@ -261,7 +261,7 @@ export const authenticate: RequestHandler = async (
 
         res.cookie("accessToken", newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: process.env.NODE_ENV === 'PRODUCTION',
           maxAge: 60 * 1000, // 1 minute for testing
         });
 
@@ -358,7 +358,7 @@ export const adminAuthenticate = async (
 
         res.cookie('adminAccessToken', newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: process.env.NODE_ENV === 'PRODUCTION',
           maxAge: 15 * 60 * 1000, // 15 minutes
         });
 
