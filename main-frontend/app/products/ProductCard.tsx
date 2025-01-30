@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
 import type { Product } from "../../types/product";
+import { toast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   product: Product
@@ -14,6 +15,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const [isAddingToCart, setIsAddingToCart] = useState(false)
 
   const handleImageLoad = useCallback(() => {
     setIsLoading(false);
@@ -52,10 +54,49 @@ export function ProductCard({ product }: ProductCardProps) {
       : 'animate-slide-right';
   };
 
-  const handleAddtoCart = (product: Product['id']) => {
-    console.log(product);
-    
-  };
+  const handleAddToCart = useCallback(
+    async (productId: Product["id"]) => {
+      setIsAddingToCart(true);
+      try {
+        const response = await fetch("http://localhost:4000/api/cart/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            productId,
+            quantity: 1, // Modify this if you want to allow quantity selection
+          }),
+          credentials: "include",
+        });
+  
+        const data = await response.json(); // Always parse the response
+  
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to add product to cart");
+        }
+  
+        toast({
+          title: "Success",
+          description: data.message || "Product added to cart successfully.",
+        });
+      } catch (error: any) {
+        console.error("Error adding product to cart:", error);
+  
+        // Display API error message if available
+        toast({
+          title: "Error",
+          description:
+            error.message || "An unexpected error occurred",
+          variant: "destructive",
+        });
+      } finally {
+        setIsAddingToCart(false);
+      }
+    },
+    [toast]
+  );
+  
 
   return (
     <Card 
@@ -154,7 +195,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <CardFooter className="p-4 pt-0">
         <Button 
           className="w-full group relative overflow-hidden transition-all hover:shadow-md"
-          onClick={() => handleAddtoCart(product.id)}
+          onClick={() => handleAddToCart(product.id)}
         >
           <span className="flex items-center justify-center gap-2 transition-transform group-hover:scale-105">
             <ShoppingCart className="h-4 w-4" />

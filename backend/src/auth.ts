@@ -191,37 +191,34 @@ async function generateAndSaveRefreshToken(userId: number) {
 //   }
 // };
 
+
 export const authenticate: RequestHandler = async (
   req: Request,
   res: Response,
   next: NextFunction
-):Promise<void> => {
+): Promise<void> => {
   try {
     const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
 
-    console.log('[DEBUG] Cookies received:', {
-      accessToken: accessToken ? 'present' : 'missing',
-      refreshToken: refreshToken ? 'present' : 'missing',
+    console.log("[DEBUG] Cookies received:", {
+      accessToken: accessToken ? "present" : "missing",
+      refreshToken: refreshToken ? "present" : "missing",
     });
 
-    if (!accessToken && refreshToken) {
-      console.log('[DEBUG] Access token missing, refresh token available. Attempting refresh flow...');
+    if (!accessToken && !refreshToken) {
+      console.log("[DEBUG] No tokens provided, skipping user attachment.");
+      return next();
     }
 
-    if (!accessToken) {
-      if (!refreshToken) {
-        console.log('[DEBUG] No tokens provided');
-        res.status(401).json({ error: 'No tokens provided' });
-        return;
-      }
-
-      console.log('[DEBUG] Refresh token detected. Validating...');
+    if (!accessToken && refreshToken) {
+      console.log("[DEBUG] Access token missing, refresh token available. Attempting refresh flow...");
+      
       try {
-        // Retrieve the refresh token from the database without hashing it again
+        // Find refresh token in database
         const storedToken = await prisma.refreshToken.findFirst({
           where: {
-            token: refreshToken,  // Direct match with the refresh token received from the client
+            token: refreshToken,
             expiresAt: { gt: new Date() },
             revoked: false,
           },
@@ -229,39 +226,34 @@ export const authenticate: RequestHandler = async (
         });
 
         if (!storedToken) {
-          console.log('[DEBUG] Stored token found: false');
-          res.status(401).json({ error: 'Invalid refresh token' });
-          return
+          console.log("[DEBUG] Refresh token not found or invalid.");
+          return next(); // Skip user attachment
         }
 
-        console.log('[DEBUG] Stored token details:', {
-          token: storedToken.token,
-          userId: storedToken.userId,
-          expiresAt: storedToken.expiresAt,
-        });
+        console.log("[DEBUG] Refresh token validated successfully.");
 
-        // Validate the refresh token using the stored token (raw token from database)
-        if (refreshToken !== storedToken.token) {
-          console.log('[DEBUG] Refresh token validation failed');
-           res.status(401).json({ error: 'Invalid refresh token' });
-           return;
+        // Decode refresh token
+        const decodedRefresh = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as UserPayload;
+
+        if (!decodedRefresh.id) {
+          console.log("[DEBUG] Refresh token missing user ID, skipping user attachment.");
+          return next();
         }
 
-        console.log('[DEBUG] Refresh token validated successfully');
-        const decodedRefresh = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as UserPayload;
+        console.log("[DEBUG] Refresh token decoded:", decodedRefresh);
 
-        console.log('[DEBUG] Refresh token decoded:', decodedRefresh);
+        // Generate new access token
+        const newAccessToken = jwt.sign(
+          { id: decodedRefresh.id, email: storedToken.user.email },
+          process.env.JWT_SECRET!,
+          { expiresIn: "1h" }
+        );
 
-        // Generate a new access token using the stored user's details
-        const newAccessToken = jwt.sign({ id: decodedRefresh.id, email: storedToken.user.email }, process.env.JWT_SECRET!, {
-          expiresIn: "1h",
-        });
-
-        console.log('[DEBUG] New access token generated:', newAccessToken);
+        console.log("[DEBUG] New access token generated:", newAccessToken);
 
         res.cookie("accessToken", newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'PRODUCTION',
+          secure: process.env.NODE_ENV === "PRODUCTION",
           maxAge: 60 * 1000, // 1 minute for testing
         });
 
@@ -270,27 +262,50 @@ export const authenticate: RequestHandler = async (
           email: storedToken.user.email,
         };
 
-        next();
-      } catch (refreshError) {
-        console.log('[DEBUG] Error validating refresh token:', refreshError);
-        res.status(401).json({ error: 'Invalid or expired refresh token' });
-      }
-    } else {
-      try {
-        console.log('[DEBUG] Attempting to verify access token...');
-        const decoded = jwt.verify(accessToken, process.env.JWT_SECRET!) as UserPayload;
+        // Attach user ID to headers if not already set
+        if (!req.headers["x-user-id"]) {
+          req.headers["x-user-id"] = storedToken.user.id.toString();
+          console.log("[DEBUG] Attached X-User-Id to headers:", req.headers["x-user-id"]);
+        } else {
+          console.log("[DEBUG] X-User-Id already exists in headers, skipping...");
+        }
 
-        console.log('[DEBUG] Access token verified successfully:', decoded);
-        req.user = decoded;
-        next();
-      } catch (error) {
-        console.log('[DEBUG] Access token verification failed:', error);
-        res.status(401).json({ error: 'Invalid or expired access token' });
+        return next();
+      } catch (refreshError) {
+        console.log("[DEBUG] Error validating refresh token:", refreshError);
+        return next(); // Skip user attachment on refresh failure
       }
     }
+
+    try {
+      console.log("[DEBUG] Attempting to verify access token...");
+      const decoded = jwt.verify(accessToken!, process.env.JWT_SECRET!) as UserPayload;
+
+      console.log("[DEBUG] Access token verified successfully:", decoded);
+
+      if (!decoded.id) {
+        console.log("[DEBUG] Access token does not contain user ID, skipping user attachment.");
+        return next();
+      }
+
+      req.user = decoded;
+
+      // Attach user ID to headers if not already set
+      if (!req.headers["x-user-id"]) {
+        req.headers["x-user-id"] = decoded.id.toString();
+        console.log("[DEBUG] Attached X-User-Id to headers:", req.headers["x-user-id"]);
+      } else {
+        console.log("[DEBUG] X-User-Id already exists in headers, skipping...");
+      }
+
+      next();
+    } catch (error) {
+      console.log("[DEBUG] Access token verification failed:", error);
+      return next(); // Skip user attachment on token failure
+    }
   } catch (error) {
-    console.error('[DEBUG] Middleware error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("[DEBUG] Middleware error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
