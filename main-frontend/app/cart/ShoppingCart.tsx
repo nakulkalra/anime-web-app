@@ -118,7 +118,7 @@ export default function ShoppingCartComponent() {
         {error === "User ID is required." && (
           <Button
             onClick={() => {
-              /* Implement login redirect */
+              window.location.href = '/Login';
             }}
           >
             Log In

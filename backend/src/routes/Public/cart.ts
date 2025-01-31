@@ -117,11 +117,11 @@ router.post('/api/cart/add',authenticate, async (req, res): Promise<void> => {
       },
     });
 
-    // 5. Update product stock
-    await prisma.product.update({
-      where: { id: productId },
-      data: { stock: { decrement: quantity } },
-    });
+    // // 5. Update product stock
+    // await prisma.product.update({
+    //   where: { id: productId },
+    //   data: { stock: { decrement: quantity } },
+    // });
 
      res.status(200).json({
       message: 'Product added to cart successfully.',
@@ -180,11 +180,11 @@ router.post('/api/cart/remove', authenticate, async (req, res): Promise<void> =>
       });
     }
 
-    // 4. Restore product stock
-    await prisma.product.update({
-      where: { id: cartItem.productId },
-      data: { stock: { increment: quantity } },
-    });
+    // // 4. Restore product stock
+    // await prisma.product.update({
+    //   where: { id: cartItem.productId },
+    //   data: { stock: { increment: quantity } },
+    // });
 
     res.status(200).json({ message: 'Item removed from cart successfully.' });
     return;

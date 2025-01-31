@@ -4,79 +4,104 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/context/SessionContext";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const Navbar: React.FC = () => {
   const { session, setSession } = useSession();
+  const router = useRouter();
 
   const handleLoginClick = () => {
-    window.location.href = `/Login`; 
+    router.push("/Login");
   };
 
   const handleCartClick = () => {
-    window.location.href = `/cart`; 
+    router.push("/cart");
   };
 
   const handleLogoutClick = async () => {
     try {
-      // Call API to log out the user
       await fetch("http://localhost:4000/api/logout", {
         method: "POST",
-        credentials: "include", // Include cookies with the request
+        credentials: "include",
       });
-
-      setSession(null); // Clear session context
+      setSession(null);
+      router.push("/");
     } catch (error) {
       console.error("Error logging out:", error);
     }
   };
 
   return (
-    <nav className="bg-zinc-950 p-4">
-      <div className="flex items-center justify-between">
-        {/* Logo */}
-        <div className="text-white text-xl font-bold">
-          <span>MyLogo</span>
-        </div>
+    <nav className="bg-zinc-900 border-b border-zinc-800 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              MyStore
+            </span>
+          </Link>
 
-        {/* Navigation Links */}
-        <div className="space-x-4">
-          <Link href="/" className="text-white hover:text-gray-400">
-            Home
-          </Link>
-          <Link href="/page1" className="text-white hover:text-gray-400">
-            Page1
-          </Link>
-          <Link href="/products" className="text-white hover:text-gray-400">
-            Products
-          </Link>
-        </div>
-        <div>
-          <Button variant="default" onClick={handleCartClick}>
-          <ShoppingCart className="h-5 text-white"/>
-          </Button>
-        </div>
-
-        {/* User Actions */}
-        <div className="flex items-center space-x-4">
-          {session ? (
-            <>
-              <span className="text-white">Welcome, {session.user.email}</span>
-              <Button
-                onClick={handleLogoutClick}
-                className="bg-red-800 text-white px-4 py-2 rounded hover:bg-red-500"
-              >
-                Logout
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center space-x-4">
+            <Link href="/">
+              <Button variant="ghost" className="text-zinc-300 hover:text-white hover:bg-zinc-800/50">
+                Home
               </Button>
-            </>
-          ) : (
-            <Button
-              onClick={handleLoginClick}
-              className="bg-blue-800 text-white px-4 py-2 rounded hover:bg-blue-500"
+            </Link>
+            <Link href="/page1">
+              <Button variant="ghost" className="text-zinc-300 hover:text-white hover:bg-zinc-800/50">
+                Page1
+              </Button>
+            </Link>
+            <Link href="/products">
+              <Button variant="ghost" className="text-zinc-300 hover:text-white hover:bg-zinc-800/50">
+                Products
+              </Button>
+            </Link>
+          </div>
+
+          {/* Right Section */}
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleCartClick}
+              className="text-zinc-300 hover:bg-zinc-800/50 hover:text-white relative"
             >
-              Login
+              <ShoppingCart className="h-5 w-5" />
+              {/* Add cart count badge here if needed */}
+              {/* <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                3
+              </span> */}
             </Button>
-          )}
+
+            {session ? (
+              <div className="flex items-center space-x-3">
+                <div className="hidden sm:flex items-center space-x-2 text-zinc-300">
+                  <User className="h-5 w-5" />
+                  <span className="font-medium">
+                    {session.user.email.split("@")[0]}
+                  </span>
+                </div>
+                <Button
+                  onClick={handleLogoutClick}
+                  variant="destructive"
+                  className="hover:bg-red-700 transition-colors"
+                >
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleLoginClick}
+                className="bg-blue-600 hover:bg-blue-700 transition-colors"
+              >
+                Login
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </nav>
