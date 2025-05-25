@@ -5,12 +5,9 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { UserPayload } from './types/express';
-import { error } from 'console';
-
+import config from './Config';
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET!;
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 const ACCESS_TOKEN_EXPIRY = '1m'; // Access token expiry
 const REFRESH_TOKEN_EXPIRY = '7d'; // Refresh token expiry
 
@@ -77,11 +74,11 @@ export async function login(email: string, password: string) {
 }
 
 function generateAccessToken(userId: number, email: string) {
-  return jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
+  return jwt.sign({ id: userId, email }, config.JWT.JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
 }
 
 async function generateAndSaveRefreshToken(userId: number) {
-  const refreshToken = jwt.sign({ id: userId }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY });
+  const refreshToken = jwt.sign({ id: userId }, config.JWT.REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY });
 
   await prisma.refreshToken.create({
     data: {
@@ -233,7 +230,7 @@ export const authenticate: RequestHandler = async (
         console.log("[DEBUG] Refresh token validated successfully.");
 
         // Decode refresh token
-        const decodedRefresh = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as UserPayload;
+        const decodedRefresh = jwt.verify(refreshToken, config.JWT.REFRESH_TOKEN_SECRET) as UserPayload;
 
         if (!decodedRefresh.id) {
           console.log("[DEBUG] Refresh token missing user ID, skipping user attachment.");
@@ -245,7 +242,7 @@ export const authenticate: RequestHandler = async (
         // Generate new access token
         const newAccessToken = jwt.sign(
           { id: decodedRefresh.id, email: storedToken.user.email },
-          process.env.JWT_SECRET!,
+          config.JWT.JWT_SECRET,
           { expiresIn: "1h" }
         );
 
@@ -253,7 +250,7 @@ export const authenticate: RequestHandler = async (
 
         res.cookie("accessToken", newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "PRODUCTION",
+          secure: config.NODE_ENV === "PRODUCTION",  
           maxAge: 60 * 1000, // 1 minute for testing
         });
 
@@ -279,7 +276,7 @@ export const authenticate: RequestHandler = async (
 
     try {
       console.log("[DEBUG] Attempting to verify access token...");
-      const decoded = jwt.verify(accessToken!, process.env.JWT_SECRET!) as UserPayload;
+      const decoded = jwt.verify(accessToken!, config.JWT.JWT_SECRET) as UserPayload;
 
       console.log("[DEBUG] Access token verified successfully:", decoded);
 
@@ -359,13 +356,13 @@ export const adminAuthenticate = async (
         }
 
         console.log('[DEBUG] Refresh token validated successfully');
-        const decodedRefresh = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as { id: number };
+        const decodedRefresh = jwt.verify(refreshToken, config.JWT.REFRESH_TOKEN_SECRET) as { id: number };
 
         console.log('[DEBUG] Decoded refresh token payload:', decodedRefresh);
 
         const newAccessToken = jwt.sign(
           { id: decodedRefresh.id, role: storedToken.admin.role },
-          JWT_SECRET,
+          config.JWT.JWT_SECRET,
           { expiresIn: '15m' } // New access token expiry
         );
 
@@ -373,7 +370,7 @@ export const adminAuthenticate = async (
 
         res.cookie('adminAccessToken', newAccessToken, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'PRODUCTION',
+          secure: config.NODE_ENV === 'PRODUCTION',
           maxAge: 15 * 60 * 1000, // 15 minutes
         });
 
@@ -389,7 +386,7 @@ export const adminAuthenticate = async (
 
     console.log('[DEBUG] Access token present, attempting to validate...');
     try {
-      const decoded = jwt.verify(accessToken, JWT_SECRET) as { id: number, role: string };
+      const decoded = jwt.verify(accessToken, config.JWT.JWT_SECRET) as { id: number, role: string };
       console.log('[DEBUG] Access token validated successfully:', decoded);
 
       req.admin = { id: decoded.id };
@@ -418,7 +415,7 @@ export const logAdminRole = (req: Request, res: Response): void => {
     }
 
     // Verify and decode the token
-    const decoded = jwt.verify(accessToken, JWT_SECRET) as { role: string };
+    const decoded = jwt.verify(accessToken, config.JWT.JWT_SECRET) as { role: string };
 
     // Log the role
     console.log('[DEBUG] Admin Role:', decoded.role);

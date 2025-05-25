@@ -18,6 +18,7 @@ model User {
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
   Cart          Cart?
+  Order         Order[]
 }
 
 model RefreshToken {
@@ -122,4 +123,49 @@ model CartItem {
   updatedAt DateTime @updatedAt
 
    @@unique([cartId, productId]) // Compound unique constraint
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id        Int      @id @default(autoincrement()) 
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+  total     Float
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  payment   Payment?
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement()) 
+  orderId   Int      @unique
+  order     Order    @relation(fields: [orderId], references: [id])
+  amount    Float
+  status    PaymentStatus @default(PENDING)
+  stripePaymentIntentId String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
 }

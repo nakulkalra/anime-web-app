@@ -21,6 +21,7 @@ interface CartItem {
 interface CartData {
   userId: number
   items: CartItem[]
+  id: number  
 }
 
 export default function ShoppingCartComponent() {
@@ -103,9 +104,39 @@ export default function ShoppingCartComponent() {
       });
     }
   };
+
+  const handlePlaceOrder = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/order/place-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: cart?.userId,
+        }),
+        credentials: "include",
+      });
+
+      const data = await response.json();
   
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to place order.");
+      }
   
-  
+      toast({
+        title: "Success",
+        description: data.message || "Order placed successfully.",
+      });
+    } catch (error: any) {
+      console.error("Error placing order:", error);
+      toast({
+        title: "Error",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+    }
+  }
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>
@@ -170,7 +201,7 @@ export default function ShoppingCartComponent() {
           <p className="text-lg font-semibold">Total:</p>
           <p className="text-2xl font-bold">${totalAmount.toFixed(2)}</p>
         </div>
-        <Button size="lg">Proceed to Checkout</Button>
+        <Button size="lg" onClick={handlePlaceOrder}>Proceed to Checkout</Button>
       </CardFooter>
     </Card>
   )

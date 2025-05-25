@@ -29,15 +29,6 @@ export async function createAdmin(email: string, password: string, role: AdminRo
     console.error('Error creating admin:', error);
   }
 }
-// createAdmin("kalranakul555@gmail.com","nakulkalra",AdminRole.GOD)
-
-// import jwt from 'jsonwebtoken';
-// import bcrypt from 'bcrypt';
-// import prisma from '../../../lib/prisma';
-// import { NextFunction, Request, Response } from 'express';
-
-// const JWT_SECRET = process.env.JWT_SECRET!;
-// const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 
 
 // Check session route handler

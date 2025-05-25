@@ -3,9 +3,10 @@ import express, { RequestHandler, Router } from 'express';
 import { z } from 'zod';
 import { authenticate, login, signup } from '../../auth';
 import prisma from '../../lib/prisma';
+import config from '../../Config';
 
 const router:Router = express.Router();
-router.use(cookieParser(process.env.COOKIE_SECRET));
+router.use(cookieParser(config.session.SESSION_SECRET));  
 
 // Validation schemas
 const loginSchema = z.object({
@@ -31,13 +32,13 @@ router.post('/api/auth/login', async (req, res) => {
     // Set both tokens in cookies
     res.cookie('accessToken', result.accessToken, { 
       httpOnly: true, 
-      secure: process.env.NODE_ENV === 'PRODUCTION', 
+      secure: config.NODE_ENV === 'PRODUCTION', 
       maxAge: 15 * 60 * 1000 // 15 minutes to match ACCESS_TOKEN_EXPIRY
     });
     
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'PRODUCTION',
+      secure: config.NODE_ENV === 'PRODUCTION',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days to match REFRESH_TOKEN_EXPIRY
     });
     
@@ -66,13 +67,13 @@ router.post('/api/auth/signup', async (req, res) => {
     // Set both tokens in cookies
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'PRODUCTION',
+      secure: config.NODE_ENV === 'PRODUCTION',
       maxAge: 15 * 60 * 1000 // 15 minutes to match ACCESS_TOKEN_EXPIRY
     });
     
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'PRODUCTION',
+      secure: config.NODE_ENV === 'PRODUCTION',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days to match REFRESH_TOKEN_EXPIRY
     });
     
@@ -130,13 +131,13 @@ router.post('/api/logout', async (req, res): Promise<void> => {
     // Clear cookies
     res.clearCookie('accessToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'PRODUCTION',
+      secure: config.NODE_ENV === 'PRODUCTION',
       sameSite: 'strict',
       path: '/',
     });
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'PRODUCTION',
+      secure: config.NODE_ENV === 'PRODUCTION',
       sameSite: 'strict',
       path: '/',
     });

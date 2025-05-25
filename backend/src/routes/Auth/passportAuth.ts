@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import prisma from '../../lib/prisma';
 import passport from 'passport';
 import { UserPayload } from '../../types/express';
+import config from '../../Config';
 
 
 const router:Router = express.Router();
@@ -27,14 +28,14 @@ router.get(
       console.log("User authenticated:", user);
 
       // Generate the access token for the user
-      const accessToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, {
+      const accessToken = jwt.sign({ id: user.id, email: user.email }, config.JWT.JWT_SECRET, {
         expiresIn: "1h",
       });
       console.log("Access token generated:", accessToken);
 
       // Generate a raw refresh token
-      const rawRefreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET!, { expiresIn: "7d" });
-      console.log("Raw refresh token:", rawRefreshToken);
+      const rawRefreshToken = jwt.sign({ id: user.id }, config.JWT.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+      console.log("Raw refresh token:", rawRefreshToken);   
 
       // Save the raw refresh token to the database (no hashing)
       await prisma.refreshToken.create({
@@ -76,13 +77,13 @@ router.get(
       console.log("User authenticated via Discord:", user);
 
       // Generate the access token for the user
-      const accessToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, {
+      const accessToken = jwt.sign({ id: user.id, email: user.email }, config.JWT.JWT_SECRET, {
         expiresIn: "1h",
       });
       console.log("Access token generated:", accessToken);
 
       // Generate a raw refresh token
-      const rawRefreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET!, { expiresIn: "7d" });
+      const rawRefreshToken = jwt.sign({ id: user.id }, config.JWT.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
       console.log("Raw refresh token:", rawRefreshToken);
 
       // Save the raw refresh token to the database (no hashing)

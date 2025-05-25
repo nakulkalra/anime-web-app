@@ -2,10 +2,9 @@ import express, { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../../../lib/prisma';
+import config from '../../../Config';
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET!;
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 
 router.post('/api/admin/auth/login', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -24,12 +23,12 @@ router.post('/api/admin/auth/login', async (req: Request, res: Response): Promis
     }
 
     // Create Access Token
-    const accessToken = jwt.sign({ id: admin.id, role: admin.role }, JWT_SECRET, {
+    const accessToken = jwt.sign({ id: admin.id, role: admin.role }, config.JWT.JWT_SECRET, {
       expiresIn: '15m',
     });
 
     // Create Refresh Token
-    const refreshToken = jwt.sign({ id: admin.id }, REFRESH_TOKEN_SECRET, {
+    const refreshToken = jwt.sign({ id: admin.id }, config.JWT.REFRESH_TOKEN_SECRET, {
       expiresIn: '7d',
     });
 
@@ -46,13 +45,13 @@ router.post('/api/admin/auth/login', async (req: Request, res: Response): Promis
     // Set cookies for accessToken and refreshToken
     res.cookie('adminAccessToken', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'PRODUCTION',
+      secure: config.NODE_ENV === 'PRODUCTION',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('adminRefreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'PRODUCTION',
+      secure: config.NODE_ENV === 'PRODUCTION',  
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 

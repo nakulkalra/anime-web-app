@@ -14,11 +14,10 @@ import path from 'path';
 import AdminUpload from './routes/Admin/Uploads/upload'
 import Products from './routes/Public/products';
 import Cart from './routes/Public/cart';
+import Order from './routes/Public/order';
+import config from './Config';
 
 dotenv.config();
-
-
-const NODE_ENV = process.env.NODE_ENV; 
 
 
 const app = express();
@@ -34,11 +33,11 @@ const app = express();
 
 
 app.use(express.json());
-app.use(cookieParser(process.env.COOKIE_SECRET || "siodhfoids")); 
+app.use(cookieParser(config.session.SESSION_SECRET || "siodhfoids")); 
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET!, // Use a secure secret
+    secret: config.session.SESSION_SECRET!, // Use a secure secret 
     resave: false,
     saveUninitialized: false,
   })
@@ -68,13 +67,13 @@ app.use('/', AdminUpload);
 //Public routes
 app.use('/', Products);
 app.use('/', Cart);
-
+app.use('/',Order);
 
 app.get('/', (req:Request, res:Response) => {
   res.json({message:"Welcome to the Express server!"});
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = config.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

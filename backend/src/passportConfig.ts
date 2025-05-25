@@ -2,12 +2,13 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as DiscordStrategy } from "passport-discord";
 import prisma from "./lib/prisma";
+import config from "./Config";
 
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientID: config.google.GOOGLE_CLIENT_ID,
+      clientSecret: config.google.GOOGLE_CLIENT_SECRET,
       callbackURL: "/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -60,8 +61,8 @@ passport.use(
 passport.use(
   new DiscordStrategy(
     {
-      clientID: process.env.DISCORD_CLIENT_ID as string,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+      clientID: config.discord.DISCORD_CLIENT_ID,
+      clientSecret: config.discord.DISCORD_CLIENT_SECRET,
       callbackURL: "/auth/discord/callback",
       scope: ["identify", "email"],
     },
