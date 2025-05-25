@@ -1,9 +1,6 @@
-export const baseFrontendURL = process.env.NODE_ENV === 'PRODUCTION' ? 'http://mydomain.com' : 'http://localhost:3000';
+import dotenv from 'dotenv';
 
-export const baseAdminFrontendURL = process.env.NODE_ENV === 'PRODUCTION' ? 'http://mydomain.com' : 'http://localhost:3001';
-
-
-export const baseBackendURL = process.env.NODE_ENV === 'PRODUCTION' ? 'http://mydomain.com' : 'http://localhost:4000';
+dotenv.config();
 
 
 const config = {
@@ -30,6 +27,11 @@ const config = {
     discord : {
         DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID!,
         DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET!,
+    },
+    URLS : {
+        baseFrontendURL: process.env.NODE_ENV === 'PRODUCTION' ? 'http://mydomain.com' : 'http://localhost:3000',
+        baseAdminFrontendURL: process.env.NODE_ENV === 'PRODUCTION' ? 'http://mydomain.com' : 'http://localhost:3001',
+        baseBackendURL: process.env.NODE_ENV === 'PRODUCTION' ? 'http://mydomain.com' : 'http://localhost:4000',
     }
 
 

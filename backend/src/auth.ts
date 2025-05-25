@@ -2,11 +2,9 @@ import { Prisma } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import prisma from './lib/prisma';
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { UserPayload } from './types/express';
 import config from './Config';
-dotenv.config();
 
 const ACCESS_TOKEN_EXPIRY = '1m'; // Access token expiry
 const REFRESH_TOKEN_EXPIRY = '7d'; // Refresh token expiry

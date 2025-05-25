@@ -1,5 +1,4 @@
 import express, { Request, Response }  from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import auth from './routes/Auth/auth';
 import cookieParser from 'cookie-parser';
@@ -17,7 +16,6 @@ import Cart from './routes/Public/cart';
 import Order from './routes/Public/order';
 import config from './Config';
 
-dotenv.config();
 
 
 const app = express();

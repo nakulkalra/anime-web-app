@@ -2,7 +2,7 @@
 import express, { Request, Response, Router } from 'express';
 import prisma from '../../../lib/prisma';
 import upload from '../../../middleware/uploads';
-import { baseAdminFrontendURL, baseBackendURL } from '../../../Config';
+import config from '../../../Config';
 
 const router: Router = express.Router();
 
@@ -18,7 +18,7 @@ router.post("/api/admin/upload", upload.single("image"), async (req, res): Promi
       const uploadedFile = await prisma.uploadedFile.create({
         data: {
           filename,
-          url: `${baseBackendURL}/uploads/${filename}`, // This is the URL
+          url: `${config.URLS.baseBackendURL}/uploads/${filename}`, // This is the URL
           mimetype,
           size,
         },
