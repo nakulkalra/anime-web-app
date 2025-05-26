@@ -410,7 +410,6 @@ const AdminProductManagement: React.FC = () => {
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  console.log(form);
 
 
   return (

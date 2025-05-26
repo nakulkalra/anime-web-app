@@ -25,17 +25,14 @@ router.get(
   async (req, res):Promise<void> => {
     try {
       const user = req.user as UserPayload;
-      console.log("User authenticated:", user);
 
       // Generate the access token for the user
       const accessToken = jwt.sign({ id: user.id, email: user.email }, config.JWT.JWT_SECRET, {
         expiresIn: "1h",
       });
-      console.log("Access token generated:", accessToken);
 
       // Generate a raw refresh token
       const rawRefreshToken = jwt.sign({ id: user.id }, config.JWT.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
-      console.log("Raw refresh token:", rawRefreshToken);   
 
       // Save the raw refresh token to the database (no hashing)
       await prisma.refreshToken.create({
@@ -45,12 +42,10 @@ router.get(
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
-      console.log("Refresh token saved to database");
 
       // Set cookies for access and refresh tokens
       res.cookie("accessToken", accessToken, { httpOnly: true });
       res.cookie("refreshToken", rawRefreshToken, { httpOnly: true });
-      console.log("Cookies set");
 
       res.redirect("http://localhost:3000/");
     } catch (error: any) {
@@ -74,17 +69,14 @@ router.get(
   async (req, res):Promise<void> => {
     try {
       const user = req.user as UserPayload;
-      console.log("User authenticated via Discord:", user);
 
       // Generate the access token for the user
       const accessToken = jwt.sign({ id: user.id, email: user.email }, config.JWT.JWT_SECRET, {
         expiresIn: "1h",
       });
-      console.log("Access token generated:", accessToken);
 
       // Generate a raw refresh token
       const rawRefreshToken = jwt.sign({ id: user.id }, config.JWT.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
-      console.log("Raw refresh token:", rawRefreshToken);
 
       // Save the raw refresh token to the database (no hashing)
       await prisma.refreshToken.create({
@@ -94,12 +86,10 @@ router.get(
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
       });
-      console.log("Refresh token saved to database");
 
       // Set cookies for access and refresh tokens
       res.cookie("accessToken", accessToken, { httpOnly: true });
       res.cookie("refreshToken", rawRefreshToken, { httpOnly: true });
-      console.log("Cookies set");
 
       res.redirect("http://localhost:3000/");
     } catch (error: any) {

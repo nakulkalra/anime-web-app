@@ -20,7 +20,6 @@ import Image from "next/image";
 
 const FashionAccountPage = () => {
     const { session, setSession } = useSession();
-    console.log(session);
     
   const router = useRouter();
 

@@ -37,8 +37,7 @@ const page = () => {
     <div>Hello</div>
     <div>{user?.email}</div>
     <div>{user?.id}</div>
-    {console.log(user)
-    }
+    
 
     
     </>

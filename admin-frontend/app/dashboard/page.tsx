@@ -17,7 +17,6 @@ const dashboard = () => {
             
             if (response.ok) {
               const data = await response.json();
-              // console.log(data.user);
               
               setAdminUser(data.user); 
             } else {
@@ -44,7 +43,6 @@ const dashboard = () => {
         <div>dashboard</div>
         <div>{adminUser?.email}</div>
         <div>{adminUser?.id}</div>
-        {console.log(adminUser)}
         <button onClick={handleRole}>Role</button>
     
     </>

@@ -18,7 +18,6 @@ const AdminLogin: React.FC = () => {
         password,
       },{withCredentials:true});
 
-      console.log('Login successful:', response.data);
       alert('Login successful!');
       window.location.href='/dashboard';
 

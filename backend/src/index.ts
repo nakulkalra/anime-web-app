@@ -16,7 +16,7 @@ import Cart from './routes/Public/cart';
 import Order from './routes/Public/order';
 import config from './Config';
 import AdminOrder from './routes/Admin/Orders/order';
-
+import MyOrder from './routes/Public/account/myorder';
 
 const app = express();
 
@@ -66,6 +66,7 @@ app.use('/', AdminOrder);
 app.use('/', Products);
 app.use('/', Cart);
 app.use('/',Order);
+app.use('/', MyOrder);
 
 app.get('/', (req:Request, res:Response) => {
   res.json({message:"Welcome to the Express server!"});

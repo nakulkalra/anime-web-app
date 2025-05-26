@@ -86,13 +86,6 @@ router.post('/api/cart/add', authenticate, async (req, res): Promise<void> => {
   const { productId, quantity, size } = req.body;
 
   try {
-    // 1. Validate input with detailed logging
-    console.log('Cart Add Request:', { userId, productId, quantity, size });
-    
-    if (!userId) {
-      res.status(400).json({ message: 'User ID is required.' });
-      return;
-    }
 
     if (!productId) {
       res.status(400).json({ message: 'Product ID is required.' });
