@@ -248,7 +248,7 @@ const AdminProductManagement: React.FC = () => {
             <div>
               <h3 className="font-semibold">{product.name}</h3>
               <p className="text-sm text-gray-500">{product.description}</p>
-              <p className="font-bold">Rs. {product.price.toFixed(2)}</p>
+              <p className="font-bold">CA$ {product.price.toFixed(2)}</p>
               
               {/* Size Availability */}
               <div className="mt-2 flex gap-1">

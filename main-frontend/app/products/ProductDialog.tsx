@@ -113,7 +113,7 @@ export function ProductDialog({
             <p className="text-gray-600">{product.description}</p>
 
             <div className="space-y-2">
-              <p className="text-2xl font-bold">Rs. {product.price.toFixed(2)}</p>
+              <p className="text-2xl font-bold">CA$ {product.price.toFixed(2)}</p>
               
               {/* Size Selection */}
               <div className="space-y-2">

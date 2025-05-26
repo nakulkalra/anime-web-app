@@ -27,8 +27,6 @@ router.post('/api/order/place-order', authenticate, async (req: Request, res: Re
     const userId = req.headers["x-user-id"] as string;
 
     const porvidedUserId = req.body.userId;
-    console.log(porvidedUserId);
-    console.log(userId);
     if (!porvidedUserId) {
         res.status(400).json({ message: 'User ID is required.' });
         return;
@@ -99,7 +97,9 @@ router.post('/api/order/place-order', authenticate, async (req: Request, res: Re
             acc + (item.product.price * item.quantity), 0);
 
         // Create Stripe payment intent
-        const { clientSecret, paymentIntentId } = await createPaymentIntent(totalPrice);
+        // const { clientSecret, paymentIntentId } = await createPaymentIntent(totalPrice);
+        const clientSecret = "test";
+        const paymentIntentId = "test";
 
         // Use a transaction to ensure all operations succeed or fail together
         const order = await prisma.$transaction(async (tx) => {

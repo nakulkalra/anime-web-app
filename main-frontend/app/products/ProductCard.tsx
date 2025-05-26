@@ -87,7 +87,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="space-y-2">
             <h3 className="font-semibold text-lg">{product.name}</h3>
             <p className="text-sm text-gray-500">{product.category.name}</p>
-            <p className="text-lg font-bold">Rs. {product.price.toFixed(2)}</p>
+            <p className="text-lg font-bold">CA$ {product.price.toFixed(2)}</p>
             
             {/* Size Availability */}
             {product.sizes && product.sizes.length > 0 && (
