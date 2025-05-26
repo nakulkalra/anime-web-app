@@ -53,7 +53,7 @@ const OrderHistory = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:4000/api/account/orders', {
+      const response = await fetch('/api/account/orders', {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',

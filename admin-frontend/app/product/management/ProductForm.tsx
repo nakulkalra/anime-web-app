@@ -40,7 +40,7 @@ export function ProductForm({ initialData, onSubmit, isSubmitting }: ProductForm
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/admin/categories');
+        const response = await axios.get('/api/admin/categories');
         setCategories(response.data.categories);
       } catch (error) {
         console.error('Error fetching categories:', error);

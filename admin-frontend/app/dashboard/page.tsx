@@ -9,7 +9,7 @@ const dashboard = () => {
         // Fetch session data from the API
         const checkSession = async () => {
           try {
-            const response = await fetch('http://localhost:4000/api/admin/check-session', {
+            const response = await fetch('/api/admin/check-session', {
               method: 'GET',
               credentials: 'include', // Ensure cookies are sent with the request
             });
@@ -32,7 +32,7 @@ const dashboard = () => {
       }, []);
 
       const handleRole = async () => {
-        const response = await fetch('http://localhost:4000/api/admin/log-role', {
+        const response = await fetch('/api/admin/log-role', {
           method: 'GET',
           credentials: 'include', // Ensure cookies are sent with the request
         });

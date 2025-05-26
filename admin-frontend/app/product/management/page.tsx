@@ -37,8 +37,8 @@ const AdminProductManagement: React.FC = () => {
     setIsLoading(true);
     try {
       const [productsResponse, categoriesResponse] = await Promise.all([
-        axios.get("http://localhost:4000/api/admin/products"),
-        axios.get("http://localhost:4000/api/admin/categories")
+        axios.get("/api/admin/products"),
+        axios.get("/api/admin/categories")
       ]);
       setProducts(productsResponse.data.products);
       setCategories(categoriesResponse.data.categories);
@@ -72,7 +72,7 @@ const AdminProductManagement: React.FC = () => {
 
   const handleCreate = async () => {
     try {
-      const response = await axios.post("http://localhost:4000/api/admin/products", form)
+      const response = await axios.post("/api/admin/products", form)
       setProducts((prev) => [...prev, response.data.product])
       setIsCreateDialogOpen(false)
       setForm({
@@ -91,7 +91,7 @@ const AdminProductManagement: React.FC = () => {
   const handleArchiveToggle = async (product:Product) => {
     try {
         const res = await axios.post(
-            'http://localhost:4000/api/admin/product/toggle-archive',
+            '/api/admin/product/toggle-archive',
             { id: product.id }, 
             {withCredentials:true }
           )
@@ -112,9 +112,9 @@ const AdminProductManagement: React.FC = () => {
     if (editingProductId === null) return
 
     try {
-      await axios.put(`http://localhost:4000/api/admin/products/${editingProductId}`, form)
+      await axios.put(`/api/admin/products/${editingProductId}`, form)
 
-      const productResponse = await axios.get("http://localhost:4000/api/admin/products")
+      const productResponse = await axios.get("/api/admin/products")
       setProducts(productResponse.data.products)
 
       setIsEditDialogOpen(false)
@@ -136,7 +136,7 @@ const AdminProductManagement: React.FC = () => {
 
   const handleEditProduct = async (product: Product) => {
     try {
-      const response = await axios.get(`http://localhost:4000/api/admin/products/${product.id}`);
+      const response = await axios.get(`/api/admin/products/${product.id}`);
       const productData = response.data.product;
       
       setSelectedProduct(productData);
@@ -157,8 +157,8 @@ const AdminProductManagement: React.FC = () => {
     setIsSubmitting(true);
     try {
       const url = selectedProduct
-        ? `http://localhost:4000/api/admin/products/${selectedProduct.id}`
-        : 'http://localhost:4000/api/admin/products';
+        ? `/api/admin/products/${selectedProduct.id}`
+        : '/api/admin/products';
 
       const method = selectedProduct ? 'put' : 'post';
       const response = await axios[method](url, data, {
@@ -192,7 +192,7 @@ const AdminProductManagement: React.FC = () => {
   const handleArchive = async (product: Product) => {
     try {
       const response = await axios.post(
-        'http://localhost:4000/api/admin/product/toggle-archive',
+        '/api/admin/product/toggle-archive',
         { id: product.id },
         { withCredentials: true }
       );

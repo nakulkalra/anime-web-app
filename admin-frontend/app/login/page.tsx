@@ -13,7 +13,7 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:4000/api/admin/auth/login', {
+      const response = await axios.post('/api/admin/auth/login', {
         email,
         password,
       },{withCredentials:true});

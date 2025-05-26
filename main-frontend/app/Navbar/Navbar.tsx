@@ -21,7 +21,7 @@ const Navbar: React.FC = () => {
 
   const handleLogoutClick = async () => {
     try {
-      await fetch("http://localhost:4000/api/logout", {
+      await fetch("/api/logout", {
         method: "POST",
         credentials: "include",
       });

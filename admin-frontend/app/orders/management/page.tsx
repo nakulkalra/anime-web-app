@@ -76,7 +76,7 @@ const OrderManagement = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `http://localhost:4000/api/admin/orders?page=${page}&limit=10&search=${search}&status=${statusFilter}`
+        `/api/admin/orders?page=${page}&limit=10&search=${search}&status=${statusFilter}`
       );
       const data = await response.json();
       setOrders(data.orders);
@@ -94,7 +94,7 @@ const OrderManagement = () => {
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/admin/orders/${orderId}/status`, {
+      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -33,7 +33,7 @@ export default function ProductPage() {
         ...(currentFilters.stockStatus && typeof currentFilters.stockStatus === 'string' && { stockStatus: currentFilters.stockStatus }),
       })
 
-      const response = await fetch(`http://localhost:4000/api/products?${queryParams}`)
+      const response = await fetch(`/api/products?${queryParams}`)
       if (!response.ok) {
         throw new Error("Failed to fetch products")
       }
@@ -50,7 +50,7 @@ export default function ProductPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/product/categories")
+      const response = await fetch("/api/product/categories")
       if (!response.ok) {
         throw new Error("Failed to fetch categories")
       }

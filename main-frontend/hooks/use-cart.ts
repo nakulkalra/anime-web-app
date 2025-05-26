@@ -12,7 +12,7 @@ export function useCart() {
   const addToCart = useCallback(async (productId: number, size: string) => {
     setIsAddingToCart(true);
     try {
-      const response = await fetch("http://localhost:4000/api/cart/add", {
+      const response = await fetch("/api/cart/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,7 +54,7 @@ export function useCart() {
   const removeFromCart = useCallback(async (productId: number, size: string) => {
     setIsAddingToCart(true);
     try {
-      const response = await fetch("http://localhost:4000/api/cart/remove", {
+      const response = await fetch("/api/cart/remove", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

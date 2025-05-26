@@ -46,7 +46,7 @@ const Login = () => {
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:4000/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +75,7 @@ const Login = () => {
   const handleSignupSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:4000/api/auth/signup', {
+      const response = await fetch('/api/auth/signup', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

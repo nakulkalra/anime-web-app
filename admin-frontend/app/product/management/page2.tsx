@@ -324,8 +324,8 @@ const AdminProductManagement: React.FC = () => {
     const fetchData = async () => {
       try {
         const [productResponse, categoryResponse] = await Promise.all([
-          axios.get('http://localhost:4000/api/admin/products'),
-          axios.get('http://localhost:4000/api/admin/categories'),
+          axios.get('/api/admin/products'),
+          axios.get('/api/admin/categories'),
         ]);
         setProducts(productResponse.data.products);
         setCategories(categoryResponse.data.categories);
@@ -351,7 +351,7 @@ const AdminProductManagement: React.FC = () => {
 
   const handleCreate = async () => {
     try {
-      const response = await axios.post('http://localhost:4000/api/admin/products', form);
+      const response = await axios.post('/api/admin/products', form);
       setProducts(prev => [...prev, response.data.product]);
       setIsCreateDialogOpen(false);
       setForm({
@@ -371,10 +371,10 @@ const AdminProductManagement: React.FC = () => {
     if (editingProductId === null) return;
   
     try {
-      await axios.put(`http://localhost:4000/api/admin/products/${editingProductId}`, form);
+      await axios.put(`/api/admin/products/${editingProductId}`, form);
       
       // Re-fetch products
-      const productResponse = await axios.get('http://localhost:4000/api/admin/products');
+      const productResponse = await axios.get('/api/admin/products');
       setProducts(productResponse.data.products);
       
       setIsEditDialogOpen(false);

@@ -9,7 +9,7 @@ const page = () => {
         // Fetch session data from the API
         const checkSession = async () => {
           try {
-            const response = await fetch('http://localhost:4000/api/check-session', {
+            const response = await fetch('/api/check-session', {
               method: 'GET',
               credentials: 'include', // Ensure cookies are sent with the request
             });

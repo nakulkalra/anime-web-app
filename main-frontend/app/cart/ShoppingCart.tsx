@@ -38,7 +38,7 @@ export default function ShoppingCartComponent() {
   const fetchCart = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch("http://localhost:4000/api/cart", {
+      const response = await fetch("/api/cart", {
         credentials: "include", // This is important to send cookies
       })
       const data = await response.json()
@@ -59,7 +59,7 @@ export default function ShoppingCartComponent() {
 
   const handleRemoveItem = async (cartItemId: number) => {
     try {
-      const response = await fetch("http://localhost:4000/api/cart/remove", {
+      const response = await fetch("/api/cart/remove", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,7 +108,7 @@ export default function ShoppingCartComponent() {
 
   const handlePlaceOrder = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/order/place-order", {
+      const response = await fetch("/api/order/place-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

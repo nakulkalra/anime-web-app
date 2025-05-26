@@ -30,7 +30,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const fetchSession = async () => {
         try {
-            const response = await axios.get<Session>("http://localhost:4000/api/check-session", {
+            const response = await axios.get<Session>("/api/check-session", {
               withCredentials: true, // Include cookies with the request
             });
             setSession(response.data);
