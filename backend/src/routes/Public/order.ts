@@ -107,6 +107,7 @@ router.post('/api/order/place-order', authenticate, async (req: Request, res: Re
             const newOrder = await tx.order.create({
                 data: {
                     userId: parseInt(userId),
+                    addressId:1,
                     total: totalPrice,
                     items: {
                         create: cart.items.map(item => ({

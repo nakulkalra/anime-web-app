@@ -19,6 +19,7 @@ model User {
   refreshTokens RefreshToken[]
   Cart          Cart?
   Order         Order[]
+  addresses     Address[]
 }
 
 model RefreshToken {
@@ -68,10 +69,10 @@ model Product {
   updatedAt   DateTime @updatedAt
   categoryId  Int
 
-  category Category       @relation(fields: [categoryId], references: [id]) // Relationship to Category
-  images   ProductImage[]
-  CartItem CartItem[]
-  sizes    ProductSize[]
+  category  Category       @relation(fields: [categoryId], references: [id]) // Relationship to Category
+  images    ProductImage[]
+  CartItem  CartItem[]
+  sizes     ProductSize[]
   OrderItem OrderItem[]
 }
 
@@ -137,15 +138,18 @@ enum OrderStatus {
 }
 
 model Order {
-  id        Int      @id @default(autoincrement()) 
+  id        Int         @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
   items     OrderItem[]
   total     Float
   status    OrderStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  addressId Int         
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   payment   Payment?
+
+  address Address @relation(fields: [addressId], references: [id])
 }
 
 model OrderItem {
@@ -159,14 +163,14 @@ model OrderItem {
 }
 
 model Payment {
-  id        Int      @id @default(autoincrement()) 
-  orderId   Int      @unique
-  order     Order    @relation(fields: [orderId], references: [id])
-  amount    Float
-  status    PaymentStatus @default(PENDING)
-  stripePaymentIntentId String? @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    Int           @id @default(autoincrement())
+  orderId               Int           @unique
+  order                 Order         @relation(fields: [orderId], references: [id])
+  amount                Float
+  status                PaymentStatus @default(PENDING)
+  stripePaymentIntentId String?       @unique
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 }
 
 enum PaymentStatus {
@@ -193,4 +197,26 @@ model ProductSize {
   updatedAt DateTime @updatedAt
 
   @@unique([productId, size]) // Each product can only have one entry per size
+}
+
+model Address {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  HouseNumber String
+  street      String
+  street2     String?
+  city        String
+  state       String
+  zipCode     String
+  country     String
+  landmark    String?
+  phone       String
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
+
+  Order Order[]
+
+  @@unique([userId, street, city, state, zipCode, country]) // Unique address per user
 }
