@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Plus, Edit2, Delete, Archive } from "lucide-react"
 import ProductDialog from "./ProductDialog";
-import type { Product, Category, FormData } from "./types";
+import type { Product, Category, FormData, ProductFormData } from "./types";
+import { ProductForm } from './ProductForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from '@/hooks/use-toast';
 
 const AdminProductManagement: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([])
@@ -26,29 +29,34 @@ const AdminProductManagement: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [productResponse, categoryResponse] = await Promise.all([
-          axios.get("http://localhost:4000/api/admin/products"),
-          axios.get("http://localhost:4000/api/admin/categories"),
-        ])
-        setProducts(productResponse.data.products)
-        setCategories(categoryResponse.data.categories)
-        
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        axios.get("http://localhost:4000/api/admin/products"),
+        axios.get("http://localhost:4000/api/admin/categories")
+      ]);
+      setProducts(productsResponse.data.products);
+      setCategories(categoriesResponse.data.categories);
     } catch (error) {
-        console.error("Error fetching data:", error)
+      console.error("Error fetching data:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
-}
+  };
 
-    fetchData()
-    
-    
-  }, [])
   useEffect(() => {
-    console.log(products);  // Now this will log the updated value of products
-  }, [products]); 
+    fetchProducts();
+  }, []);
 
   const handleFieldChange = useCallback((name: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [name]: value }))
@@ -126,110 +134,178 @@ const AdminProductManagement: React.FC = () => {
     }
   }
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProductId(product.id)
-    setForm({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      stock: product.stock,
-      categoryId: product.categoryId.toString(),
-      productImages: product.images,
-      imageUrl: "",
-    })
-    setIsEditDialogOpen(true)
-  }
+  const handleEditProduct = async (product: Product) => {
+    try {
+      const response = await axios.get(`http://localhost:4000/api/admin/products/${product.id}`);
+      const productData = response.data.product;
+      
+      setSelectedProduct(productData);
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch product details',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const filteredProducts = products.filter((product) => product.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
+  const handleSubmit = async (data: ProductFormData) => {
+    setIsSubmitting(true);
+    try {
+      const url = selectedProduct
+        ? `http://localhost:4000/api/admin/products/${selectedProduct.id}`
+        : 'http://localhost:4000/api/admin/products';
+
+      const method = selectedProduct ? 'put' : 'post';
+      const response = await axios[method](url, data, {
+        withCredentials: true,
+      });
+
+      const result = await response.data;
+
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: `Product ${selectedProduct ? 'updated' : 'created'} successfully`,
+        });
+        setIsEditDialogOpen(false);
+        setSelectedProduct(null);
+        fetchProducts();
+      } else {
+        throw new Error(result.message || 'Failed to save product');
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to save product',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleArchive = async (product: Product) => {
+    try {
+      const response = await axios.post(
+        'http://localhost:4000/api/admin/product/toggle-archive',
+        { id: product.id },
+        { withCredentials: true }
+      );
+
+      const result = await response.data;
+
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: `Product ${product.isArchived ? 'unarchived' : 'archived'} successfully`,
+        });
+        fetchProducts();
+      } else {
+        throw new Error(result.message || 'Failed to update product');
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update product',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-      <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium">Products</h2>
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> New Product
+    <div className="container mx-auto py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Product Management</h1>
+        <Button onClick={() => {
+          setSelectedProduct(null);
+          setIsEditDialogOpen(true);
+        }}>
+          Add New Product
         </Button>
       </div>
 
-      <div className="flex items-center mb-4">
-        <Search className="w-5 h-5 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search..."
-          className="ml-2 p-2 border rounded"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {products.map((product) => (
+          <div key={product.id} className="border rounded-lg p-4 space-y-4">
+            <div className="aspect-square relative">
+              {product.images[0] && (
+                <img
+                  src={product.images[0].url}
+                  alt={product.name}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold">{product.name}</h3>
+              <p className="text-sm text-gray-500">{product.description}</p>
+              <p className="font-bold">Rs. {product.price.toFixed(2)}</p>
+              
+              {/* Size Availability */}
+              <div className="mt-2 flex gap-1">
+                {product.sizes.map((size) => (
+                  <span
+                    key={size.size}
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      size.quantity > 0 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {size.size}: {size.quantity}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleEditProduct(product)}
+              >
+                Edit
+              </Button>
+              <Button
+                variant={product.isArchived ? "default" : "destructive"}
+                onClick={() => handleArchive(product)}
+              >
+                {product.isArchived ? 'Unarchive' : 'Archive'}
+              </Button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <Card>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>{product.name}</TableCell>
-                  <TableCell>{product.description}</TableCell>
-                  <TableCell>{product.price}</TableCell>
-                  <TableCell>{product.stock}</TableCell>
-                  <TableCell>{categories.find((cat) => cat.id === product.categoryId)?.name || "Unknown"}</TableCell>
-                  <TableCell className="space-x-2">
-                    <Button variant="outline" size="icon" onClick={() => handleEditProduct(product)}>
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    
-                    
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleArchiveToggle(product)}
-                        className={product.isArchived ? 'bg-red-700 text-white hover:bg-red-600' : 'bg-emerald-700 text-white hover:bg-emerald-600 hover:text-black'}
-                        
-                        >
-                        <Archive className="h-4 w-4" />
-                        </Button>
-
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <ProductDialog
-        isOpen={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        mode="create"
-        form={form}
-        onFieldChange={handleFieldChange}
-        onCategoryChange={handleCategoryChange}
-        onImagesChange={handleImagesChange}
-        onSubmit={handleCreate}
-        categories={categories}
-      />
-
-      <ProductDialog
-        isOpen={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        mode="edit"
-        form={form}
-        onFieldChange={handleFieldChange}
-        onCategoryChange={handleCategoryChange}
-        onImagesChange={handleImagesChange}
-        onSubmit={handleEdit}
-        categories={categories}
-      />
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedProduct ? 'Edit Product' : 'Add New Product'}
+            </DialogTitle>
+          </DialogHeader>
+          <ProductForm
+            initialData={selectedProduct ? {
+              name: selectedProduct.name,
+              description: selectedProduct.description,
+              price: selectedProduct.price,
+              stock: selectedProduct.stock,
+              categoryId: selectedProduct.categoryId,
+              images: selectedProduct.images.map(img => img.url),
+              sizes: selectedProduct.sizes.map(({ id, productId, ...size }) => size)
+            } : undefined}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

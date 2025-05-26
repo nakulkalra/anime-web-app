@@ -26,12 +26,11 @@ export default function ProductPage() {
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: "10",
-        ...(query && { search: query }),
-        ...(currentFilters.category && { category: currentFilters.category.toString() }),
+        ...(query && { name: query }),
+        ...(currentFilters.category && { categoryId: currentFilters.category.toString() }),
         ...(currentFilters.minPrice && { minPrice: currentFilters.minPrice.toString() }),
         ...(currentFilters.maxPrice && { maxPrice: currentFilters.maxPrice.toString() }),
-        ...(currentFilters.stockStatus &&
-          currentFilters.stockStatus.length > 0 && { stockStatus: currentFilters.stockStatus.join(",") }),
+        ...(currentFilters.stockStatus && typeof currentFilters.stockStatus === 'string' && { stockStatus: currentFilters.stockStatus }),
       })
 
       const response = await fetch(`http://localhost:4000/api/products?${queryParams}`)

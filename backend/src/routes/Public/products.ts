@@ -86,6 +86,7 @@ router.get('/api/products', async (req: Request<{}, {}, {}, ProductQuery>, res: 
       include: {
         category: true,
         images: true,
+        sizes: true,
       },
     });
 
@@ -94,15 +95,16 @@ router.get('/api/products', async (req: Request<{}, {}, {}, ProductQuery>, res: 
       where: filters,
     });
 
-    // Map through the products to modify the stock status and exclude the 'stock' field
+    // Map through the products to modify the stock status based on sizes
     const modifiedProducts = products.map(product => {
-      let stockStatus = 'in_stock'; // Default to in_stock
-
-      // Check the stock and assign the correct status
-      if (product.stock === 0) {
-        stockStatus = 'out_of_stock'; // If stock is 0, mark as out_of_stock
-      } else if (product.stock <= 5) {
-        stockStatus = 'low_stock'; // If stock is <= 5 but > 0, mark as low_stock
+      // Calculate total stock across all sizes
+      const totalStock = product.sizes.reduce((sum, size) => sum + size.quantity, 0);
+      
+      let stockStatus = 'in_stock';
+      if (totalStock === 0) {
+        stockStatus = 'out_of_stock';
+      } else if (totalStock <= 5) {
+        stockStatus = 'low_stock';
       }
 
       // Remove 'stock' field and add 'stockStatus'
@@ -110,7 +112,7 @@ router.get('/api/products', async (req: Request<{}, {}, {}, ProductQuery>, res: 
 
       return {
         ...productWithoutStock,
-        stockStatus, // Add the stockStatus field
+        stockStatus,
       };
     });
 

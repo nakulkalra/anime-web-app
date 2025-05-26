@@ -16,6 +16,7 @@ interface CartItem {
   price: number
   quantity: number
   totalPrice: number
+  size: string
 }
 
 interface CartData {
@@ -185,6 +186,7 @@ export default function ShoppingCartComponent() {
               <h3 className="font-semibold">{item.name}</h3>
               <p className="text-sm text-gray-500">{item.description}</p>
               <p className="text-sm">Quantity: {item.quantity}</p>
+              <p className="text-sm">Size: {item.size}</p>
             </div>
             <div className="text-right">
               <p className="font-semibold">${item.totalPrice.toFixed(2)}</p>

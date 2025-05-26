@@ -5,13 +5,16 @@ export interface Product {
     price: number
     stock: number
     categoryId: number
+    category?: Category
     images: ProductImage[]
-    isArchived?: boolean
+    sizes: ProductSize[]
+    isArchived: boolean
   }
   
   export interface Category {
     id: number
     name: string
+    description: string
   }
   
   export interface FormData {
@@ -28,9 +31,33 @@ export interface Product {
   export interface ProductImage {
     id: number
     url: string
-    altText: string
-    createdAt: string
+    altText?: string
     productId: number
+  }
+  
+  export interface ProductSize {
+    id: number
+    size: 'S' | 'M' | 'L' | 'XL' | 'XXL'
+    quantity: number
+    productId: number
+  }
+  
+  export interface ProductFormData {
+    name: string
+    description: string
+    price: number
+    stock: number
+    categoryId: number
+    images: string[]
+    sizes: Omit<ProductSize, 'id' | 'productId'>[]
+  }
+  
+  export interface ApiResponse {
+    success: boolean
+    message?: string
+    product?: Product
+    products?: Product[]
+    error?: string
   }
   
   

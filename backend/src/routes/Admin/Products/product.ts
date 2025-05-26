@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import prisma from '../../../lib/prisma';
+import { ItemSize } from '@prisma/client';
 
 const router: Router = express.Router();
 
@@ -14,26 +15,42 @@ const handleError = (res: Response, error: any, message: string) => {
     error: error instanceof Error ? error.message : error,
   });
 };
-// Add New Product with Images
+
+// Add New Product with Images and Sizes
 router.post('/api/admin/products', async (req, res): Promise<void> => {
-  let { name, description, price, stock, categoryId, productImages, imageUrl } = req.body;
+  let { name, description, price, stock, categoryId, images, sizes } = req.body;
 
   price = parseFloat(price);
   stock = parseInt(stock);
   categoryId = parseInt(categoryId);
 
-  // Ensure productImages is an array, handle empty or invalid cases
-  if (productImages) {
-      productImages = Array.isArray(productImages) ? productImages : [productImages];
-  } else {
-      productImages = [];
+  // Validate required fields
+  if (!name || !description || price === undefined || categoryId === undefined) {
+    res.status(400).json({
+      success: false,
+      message: 'Missing required fields',
+    });
+    return;
   }
 
-  // TypeScript type for product images (string URLs)
-  type ProductImage = { url: string };
+  // Ensure images is an array and filter out empty strings
+  if (images) {
+    images = Array.isArray(images) ? images.filter(url => url.trim()) : [images].filter(url => url.trim());
+  } else {
+    images = [];
+  }
+
+  // Validate sizes
+  if (!sizes || !Array.isArray(sizes)) {
+    res.status(400).json({
+      success: false,
+      message: 'Sizes array is required',
+    });
+    return;
+  }
 
   try {
-    // Create the product
+    // Create the product with sizes and images
     const product = await prisma.product.create({
       data: { 
         name, 
@@ -42,20 +59,21 @@ router.post('/api/admin/products', async (req, res): Promise<void> => {
         stock, 
         categoryId,
         images: {
-          create: productImages.map((image: string): ProductImage => ({ url: image })) // Create image URLs for the product
+          create: images.map((url: string) => ({ url: url.trim() }))
         },
+        sizes: {
+          create: sizes.map((size: { size: ItemSize, quantity: number }) => ({
+            size: size.size,
+            quantity: size.quantity
+          }))
+        }
       },
+      include: {
+        images: true,
+        sizes: true,
+        category: true
+      }
     });
-
-    // If imageUrl (single image) is provided, handle it as well
-    if (imageUrl) {
-      await prisma.productImage.create({
-        data: {
-          url: imageUrl,
-          productId: product.id,
-        },
-      });
-    }
 
     res.status(201).json({
       success: true,
@@ -67,10 +85,9 @@ router.post('/api/admin/products', async (req, res): Promise<void> => {
   }
 });
 
-
 router.put('/api/admin/products/:id', async (req, res): Promise<void> => {
   const { id } = req.params;
-  let { name, description, price, stock, categoryId, isArchived, imageUrl, productImages } = req.body;
+  let { name, description, price, stock, categoryId, isArchived, images, sizes } = req.body;
 
   price = parseFloat(price);
   stock = parseInt(stock);
@@ -86,7 +103,7 @@ router.put('/api/admin/products/:id', async (req, res): Promise<void> => {
   }
 
   // Ensure at least one field to update is provided
-  if (!name && !description && price === undefined && stock === undefined && !categoryId && isArchived === undefined && !imageUrl && !productImages) {
+  if (!name && !description && price === undefined && stock === undefined && !categoryId && isArchived === undefined && !images && !sizes) {
     res.status(400).json({
       success: false,
       message: 'No fields to update were provided',
@@ -95,101 +112,80 @@ router.put('/api/admin/products/:id', async (req, res): Promise<void> => {
   }
 
   try {
-    // Update product data (name, description, price, stock, categoryId, isArchived)
+    // Update product data
     const product = await prisma.product.update({
       where: { id: Number(id) },
-      data: { name, description, price, stock, categoryId, isArchived },
+      data: { 
+        name, 
+        description, 
+        price, 
+        stock, 
+        categoryId, 
+        isArchived 
+      },
+      include: {
+        images: true,
+        sizes: true
+      }
     });
 
-    // If productImages are provided, update the product's images
-    if (productImages && Array.isArray(productImages)) {
-      // Handle image objects (each having 'url' and 'altText')
-      const updatedImages = productImages.map((image: { url: string, altText?: string }) => ({
-        url: image.url,  // Make sure only the URL string is passed
-        altText: image.altText || null, // Handle the altText if available
-        productId: product.id,
-      }));
+    // If sizes are provided, update the product's sizes
+    if (sizes && Array.isArray(sizes)) {
+      // First, remove existing sizes for the product
+      await prisma.productSize.deleteMany({
+        where: {
+          productId: product.id,
+        },
+      });
 
-      // First, remove existing images for the product
+      // Create new sizes for the product
+      await prisma.productSize.createMany({
+        data: sizes.map((size: { size: ItemSize, quantity: number }) => ({
+          size: size.size,
+          quantity: size.quantity,
+          productId: product.id,
+        })),
+      });
+    }
+
+    // If images are provided, update the product's images
+    if (images && Array.isArray(images)) {
+      // Filter out empty strings and trim URLs
+      const validImages = images.filter(url => url.trim());
+      
+      // Remove existing images
       await prisma.productImage.deleteMany({
         where: {
           productId: product.id,
         },
       });
 
-      // Now, create new images for the product
+      // Create new images
       await prisma.productImage.createMany({
-        data: updatedImages,
+        data: validImages.map(url => ({
+          url: url.trim(),
+          productId: product.id,
+        })),
       });
     }
 
-    // If imageUrl is provided (comma-separated list of images), handle it
-    if (imageUrl) {
-      // Split the imageUrl string into an array of URLs
-      const imageUrlsArray = imageUrl.split(',');
-
-      // Create new image entries for each URL
-      const updatedImages = imageUrlsArray.map((url: string) => ({
-        url,
-        productId: product.id,
-      }));
-
-      // Create the new product images in the database
-      await prisma.productImage.createMany({
-        data: updatedImages,
-      });
-    }
+    // Fetch the updated product with all relations
+    const updatedProduct = await prisma.product.findUnique({
+      where: { id: Number(id) },
+      include: {
+        images: true,
+        sizes: true,
+        category: true
+      }
+    });
 
     res.status(200).json({
       success: true,
       message: 'Product updated successfully',
-      product,
+      product: updatedProduct,
     });
   } catch (error) {
     handleError(res, error, 'Failed to update product');
-  }
-});
-
-
-// Add New Product with Images
-router.post('/api/admin/products', async (req, res):Promise<void> => {
-  let { name, description, price, stock, categoryId, productImages } = req.body;
-
-  price = parseFloat(price);
-  stock = parseInt(stock);
-  categoryId = parseInt(categoryId);
-
-  // Ensure productImages is an array, handle empty or invalid cases
-  if (productImages) {
-      productImages = Array.isArray(productImages) ? productImages : [productImages];
-  } else {
-      productImages = [];
-  }
-
-  // TypeScript type for product images (string URLs)
-  type ProductImage = { url: string };
-
-  try {
-      const product = await prisma.product.create({
-          data: { 
-              name, 
-              description, 
-              price, 
-              stock, 
-              categoryId,
-              images: {
-                  create: productImages.map((image: string): ProductImage => ({ url: image })) // Explicit type for `image`
-              },
-          },
-      });
-
-      res.status(201).json({
-          success: true,
-          message: 'Product created successfully',
-          product,
-      });
-  } catch (error) {
-      handleError(res, error, 'Failed to create product');
   }
 });
 
@@ -198,7 +194,8 @@ router.get('/api/admin/products', async (req: Request, res: Response) => {
   try {
     const products = await prisma.product.findMany({
       include: {
-        images: true, // Include related product images
+        images: true,
+        sizes: true,
       },
     });
 
@@ -213,15 +210,14 @@ router.get('/api/admin/products', async (req: Request, res: Response) => {
 
 // Get all categories
 router.get('/api/admin/categories', async (req: Request, res: Response) => {
-    try {
-      const categories = await prisma.category.findMany();
-      res.status(200).json({ categories });
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      res.status(500).json({ message: 'Failed to fetch categories', error });
-    }
-  });
-
+  try {
+    const categories = await prisma.category.findMany();
+    res.status(200).json({ categories });
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Failed to fetch categories', error });
+  }
+});
 
 // Route to delete a specific product image
 router.post('/api/admin/product/toggle-archive', async (req, res): Promise<void> => {
@@ -233,9 +229,11 @@ router.post('/api/admin/product/toggle-archive', async (req, res): Promise<void>
   }
 
   try {
-    // Find the product by ID to ensure it exists
     const product = await prisma.product.findUnique({
       where: { id },
+      include: {
+        sizes: true
+      }
     });
 
     if (!product) {
@@ -243,20 +241,63 @@ router.post('/api/admin/product/toggle-archive', async (req, res): Promise<void>
       return;
     }
 
-    // Toggle the isArchived status
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
         isArchived: !product.isArchived,
       },
+      include: {
+        sizes: true
+      }
     });
 
-    res.status(200).json({ success: true, message: 'Product archived status updated', product: updatedProduct });
-    return;
+    res.status(200).json({ 
+      success: true, 
+      message: 'Product archived status updated', 
+      product: updatedProduct 
+    });
   } catch (error) {
     console.error('Error updating product archived status:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Single Product by ID
+router.get('/api/admin/products/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (!id) {
+    res.status(400).json({
+      success: false,
+      message: 'Product ID is required',
+    });
     return;
+  }
+
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: Number(id) },
+      include: {
+        images: true,
+        sizes: true,
+        category: true
+      }
+    });
+
+    if (!product) {
+      res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    handleError(res, error, 'Failed to fetch product');
   }
 });
 

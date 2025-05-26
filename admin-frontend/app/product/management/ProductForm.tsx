@@ -1,162 +1,279 @@
-import type React from "react"
-import { memo, useCallback } from "react"
-import FormInput from "./FormInput"
-import CategorySelect from "./CategorySelect"
-import type { FormData, Category } from "./types"
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import CategorySelect from './CategorySelect';
+import { toast } from '@/hooks/use-toast';
+import type { ProductFormData, ProductSize, Category } from './types';
+import axios from 'axios';
+
+const AVAILABLE_SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const;
+
+const formSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required'),
+  price: z.number().min(0, 'Price must be positive'),
+  stock: z.number().min(0, 'Stock must be positive'),
+  categoryId: z.number().min(1, 'Category is required'),
+  images: z.array(z.string()),
+  sizes: z.array(z.object({
+    size: z.enum(['S', 'M', 'L', 'XL', 'XXL']),
+    quantity: z.number().min(0, 'Quantity must be positive')
+  }))
+});
 
 interface ProductFormProps {
-  form: FormData
-  onFieldChange: (name: string, value: string | number) => void
-  onCategoryChange: (value: string) => void
-  onImagesChange: (images: string[]) => void
-  categories: Category[]
+  initialData?: ProductFormData;
+  onSubmit: (data: ProductFormData) => Promise<void>;
+  isSubmitting?: boolean;
 }
 
-const ProductForm = memo(({ form, onFieldChange, onCategoryChange, onImagesChange, categories }: ProductFormProps) => {
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const { name, value, type } = e.target
-      const processedValue = type === "number" ? Number(value) : value
-      onFieldChange(name, processedValue)
-    },
-    [onFieldChange],
-  )
+export function ProductForm({ initialData, onSubmit, isSubmitting }: ProductFormProps) {
+  const [images, setImages] = useState<string[]>(initialData?.images || []);
+  const [sizes, setSizes] = useState<Omit<ProductSize, 'id' | 'productId'>[]>(initialData?.sizes || []);
+  const [categories, setCategories] = useState<Category[]>([]);
 
-  const handleImagesChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      e.preventDefault(); // Prevent form submission
-      const { value } = e.target
-      
-      // Only process images when form is submitted, not on every keystroke
-      if (e.type === 'change') {
-        // Just update the input field value
-        onFieldChange('imageUrl', value)
-        return
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/admin/categories');
+        setCategories(response.data.categories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch categories',
+          variant: 'destructive',
+        });
       }
-    },
-    [onFieldChange],
-  )
-  
-  const handleDeleteImage = async (imageId: number) => {
+    };
+
+    fetchCategories();
+  }, []);
+
+  const form = useForm<ProductFormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: initialData?.name || '',
+      description: initialData?.description || '',
+      price: initialData?.price || 0,
+      stock: initialData?.stock || 0,
+      categoryId: initialData?.categoryId || 0,
+      images: initialData?.images || [],
+      sizes: initialData?.sizes || []
+    }
+  });
+
+  const handleImageAdd = (url: string) => {
+    if (!url.trim()) return;
+    const newImages = [...images, url.trim()];
+    setImages(newImages);
+    form.setValue('images', newImages);
+  };
+
+  const handleImageRemove = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    form.setValue('images', newImages);
+  };
+
+  const handleSizeQuantityChange = (size: typeof AVAILABLE_SIZES[number], quantity: number) => {
+    const existingSizeIndex = sizes.findIndex(s => s.size === size);
+    let newSizes: Omit<ProductSize, 'id' | 'productId'>[];
+
+    if (existingSizeIndex >= 0) {
+      newSizes = sizes.map((s, index) => 
+        index === existingSizeIndex ? { ...s, quantity } : s
+      );
+    } else {
+      newSizes = [...sizes, { size, quantity }];
+    }
+
+    setSizes(newSizes);
+    form.setValue('sizes', newSizes);
+  };
+
+  const handleSubmit = async (data: ProductFormData) => {
     try {
-      const response = await fetch('http://localhost:4000/api/admin/product/delete-image', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageId }),  // Send imageId in the request body
-        credentials: 'include',  // Include credentials (e.g., cookies)
+      const formData = {
+        ...data,
+        images: images
+      };
+      await onSubmit(formData);
+      toast({
+        title: 'Success',
+        description: 'Product saved successfully',
       });
-  
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // On successful deletion, update the productImages state
-          const updatedImages = form.productImages.filter((image: any) => image.id !== imageId);
-          onImagesChange(updatedImages);  // Update the parent component state
-          console.log("Image deleted successfully.");
-        } else {
-          console.error(data.error || 'Failed to delete image');
-        }
-      } else {
-        console.error('Failed to delete image:', response.statusText);
-      }
     } catch (error) {
-      console.error('Error deleting image:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save product',
+        variant: 'destructive',
+      });
     }
   };
-  
-  
-  
 
   return (
-    <div className="space-y-4">
-        <form onSubmit={(e) => e.preventDefault()}>
-
-      <FormInput
-        label="Product Name"
-        name="name"
-        value={form.name}
-        onChange={handleInputChange}
-        placeholder="Enter product name"
-      />
-
-      <FormInput
-        label="Description"
-        name="description"
-        value={form.description}
-        onChange={handleInputChange}
-        placeholder="Enter product description"
-      />
-
-      <div className="grid grid-cols-2 gap-4">
-        <FormInput
-          label="Price"
-          name="price"
-          type="number"
-          value={form.price}
-          onChange={handleInputChange}
-          placeholder="0.00"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
 
-        <FormInput
-          label="Stock"
-          name="stock"
-          type="number"
-          value={form.stock}
-          onChange={handleInputChange}
-          placeholder="0"
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
 
-      <CategorySelect value={form.categoryId} onChange={onCategoryChange} categories={categories} />
-
-      <div className="space-y-2">
-  <FormInput
-    label="Image URLs"
-    name="imageUrl"
-    value={form.imageUrl || ""}
-    onChange={handleImagesChange}
-    placeholder="Enter product image URLs (comma-separated)"
-  />
-  <div className="flex gap-2 mt-2">
-    {form.productImages.length > 0 ? (
-      form.productImages.map((img: any, index: number) => (
-        <div key={img.id || index} className="relative group w-24 h-24"> {/* Use img.id or index if id is missing */}
-          <img
-            src={typeof img === "string" ? img : img.url}
-            alt={typeof img === "string" ? `Product Image` : img.altText}
-            className="w-full h-full object-cover rounded-lg group-hover:grayscale transition duration-200"
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Price</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    {...field} 
+                    onChange={e => field.onChange(parseFloat(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <button
-            onClick={() => handleDeleteImage(img.id)}  // Pass img.id here
-            className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition duration-200 rounded-lg"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+
+          <FormField
+            control={form.control}
+            name="stock"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Stock</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    {...field} 
+                    onChange={e => field.onChange(parseInt(e.target.value))}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      ))
-    ) : (
-      <p className="text-gray-500">No images found</p>
-    )}
-  </div>
-</div>
-</form>
 
-    </div>
-  )
-})
+        <FormField
+          control={form.control}
+          name="categoryId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Category</FormLabel>
+              <FormControl>
+                <CategorySelect
+                  value={field.value.toString()}
+                  onChange={(value) => field.onChange(parseInt(value))}
+                  categories={categories}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-ProductForm.displayName = "ProductForm"
+        {/* Size Management */}
+        <div className="space-y-4">
+          <FormLabel>Sizes</FormLabel>
+          <div className="grid grid-cols-5 gap-4">
+            {AVAILABLE_SIZES.map((size) => (
+              <div key={size} className="space-y-2">
+                <FormLabel>{size}</FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  value={sizes.find(s => s.size === size)?.quantity || 0}
+                  onChange={(e) => handleSizeQuantityChange(size, parseInt(e.target.value))}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
 
-export default ProductForm
+        {/* Image Management */}
+        <div className="space-y-4">
+          <FormLabel>Images</FormLabel>
+          <div className="space-y-2">
+            {images.map((url, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input value={url} readOnly />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => handleImageRemove(index)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Image URL"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const input = e.target as HTMLInputElement;
+                    if (input.value.trim()) {
+                      handleImageAdd(input.value);
+                      input.value = '';
+                    }
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                  if (input.value.trim()) {
+                    handleImageAdd(input.value);
+                    input.value = '';
+                  }
+                }}
+              >
+                Add
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Save Product'}
+        </Button>
+      </form>
+    </Form>
+  );
+}
 

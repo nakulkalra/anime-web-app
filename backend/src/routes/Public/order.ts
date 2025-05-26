@@ -4,6 +4,22 @@ import { authenticate } from '../../auth';
 import { createPaymentIntent, stripe } from '../../lib/stripe';
 import Stripe from 'stripe';
 import config from '../../Config';
+import { Cart, CartItem, Product, Prisma } from '@prisma/client';
+
+type CartWithItems = Cart & {
+    items: (CartItem & {
+        product: Product & {
+            sizes: {
+                id: number;
+                productId: number;
+                size: 'S' | 'M' | 'L' | 'XL' | 'XXL';
+                quantity: number;
+                createdAt: Date;
+                updatedAt: Date;
+            }[];
+        };
+    })[];
+};
 
 const router: Router = express.Router();
 
@@ -41,11 +57,15 @@ router.post('/api/order/place-order', authenticate, async (req: Request, res: Re
             include: {
                 items: {
                     include: {
-                        product: true
+                        product: {
+                            include: {
+                                sizes: true
+                            }
+                        }
                     }
                 }
             }
-        });
+        }) as CartWithItems | null;
 
         if (!cart) {
             res.status(404).json({ message: 'Cart not found.' });
@@ -57,18 +77,26 @@ router.post('/api/order/place-order', authenticate, async (req: Request, res: Re
             return;
         }
 
-        // Check if all items are in stock
+        // Check if all items are in stock for their respective sizes
         for (const item of cart.items) {
-            if (item.product.stock < item.quantity) {
+            const productSize = item.product.sizes.find(ps => ps.size === item.size);
+            if (!productSize) {
                 res.status(400).json({ 
-                    message: `Insufficient stock for ${item.product.name}. Available: ${item.product.stock}, Requested: ${item.quantity}` 
+                    message: `Size ${item.size} not available for ${item.product.name}` 
+                });
+                return;
+            }
+            if (productSize.quantity < item.quantity) {
+                res.status(400).json({ 
+                    message: `Insufficient stock for ${item.product.name} in size ${item.size}. Available: ${productSize.quantity}, Requested: ${item.quantity}` 
                 });
                 return;
             }
         }
 
         // Calculate total price
-        const totalPrice = cart.items.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+        const totalPrice = cart.items.reduce((acc: number, item) => 
+            acc + (item.product.price * item.quantity), 0);
 
         // Create Stripe payment intent
         const { clientSecret, paymentIntentId } = await createPaymentIntent(totalPrice);
@@ -83,6 +111,7 @@ router.post('/api/order/place-order', authenticate, async (req: Request, res: Re
                     items: {
                         create: cart.items.map(item => ({
                             productId: item.productId,
+                            size: item.size,
                             quantity: item.quantity
                         }))
                     },
@@ -100,12 +129,17 @@ router.post('/api/order/place-order', authenticate, async (req: Request, res: Re
                 }
             });
 
-            // Decrement product quantities
+            // Decrement product quantities for each size
             for (const item of cart.items) {
-                await tx.product.update({
-                    where: { id: item.productId },
+                await tx.productSize.update({
+                    where: {
+                        productId_size: {
+                            productId: item.productId,
+                            size: item.size
+                        }
+                    },
                     data: {
-                        stock: {
+                        quantity: {
                             decrement: item.quantity
                         }
                     }

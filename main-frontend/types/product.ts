@@ -1,7 +1,7 @@
 export interface Product {
     id: number
     name: string
-    description: string
+    description: string | null
     price: number
     stock: number
     isArchived: boolean
@@ -10,6 +10,7 @@ export interface Product {
     categoryId: number
     category: Category
     images: Image[]
+    sizes: Size[]
   }
   
   export interface Category {
@@ -23,7 +24,7 @@ export interface Product {
   export interface Image {
     id: number
     url: string
-    altText: string
+    altText: string | null
     createdAt: string
     productId: number
   }
@@ -43,8 +44,13 @@ export interface Product {
     category?: number
     minPrice?: number
     maxPrice?: number
-    inStock?: boolean
-    stockStatus?: string[] 
+    stockStatus?: 'in_stock' | 'low_stock' | 'out_of_stock'
+  }
+  
+  export interface Size {
+    id: number
+    size: 'S' | 'M' | 'L' | 'XL' | 'XXL'
+    quantity: number
   }
   
   
