@@ -72,6 +72,7 @@ model Product {
   images   ProductImage[]
   CartItem CartItem[]
   sizes    ProductSize[]
+  OrderItem OrderItem[]
 }
 
 model ProductImage {
@@ -154,6 +155,7 @@ model OrderItem {
   size      ItemSize
   quantity  Int
   order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
 }
 
 model Payment {

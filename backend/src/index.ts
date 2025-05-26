@@ -15,7 +15,7 @@ import Products from './routes/Public/products';
 import Cart from './routes/Public/cart';
 import Order from './routes/Public/order';
 import config from './Config';
-
+import AdminOrder from './routes/Admin/Orders/order';
 
 
 const app = express();
@@ -61,7 +61,7 @@ app.use('/',AdminAuth);
 app.use('/', AdminLogin);
 app.use('/', AdminProduct);
 app.use('/', AdminUpload);
-
+app.use('/', AdminOrder);
 //Public routes
 app.use('/', Products);
 app.use('/', Cart);
