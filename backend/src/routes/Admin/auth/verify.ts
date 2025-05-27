@@ -30,6 +30,8 @@ export async function createAdmin(email: string, password: string, role: AdminRo
   }
 }
 
+// createAdmin("kalranakul555@gmail.com","nakulkalra", AdminRole.GOD);
+
 
 // Check session route handler
 const checkSession: RequestHandler = (req, res) => {
