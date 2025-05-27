@@ -1,7 +1,6 @@
 "use client"
 import type React from "react"
 import { useEffect, useState, useCallback } from "react"
-import axios from "axios"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,6 +10,7 @@ import type { Product, Category, FormData, ProductFormData } from "./types";
 import { ProductForm } from './ProductForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
+import api from '@/lib/axios';
 
 const AdminProductManagement: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([])
@@ -37,8 +37,8 @@ const AdminProductManagement: React.FC = () => {
     setIsLoading(true);
     try {
       const [productsResponse, categoriesResponse] = await Promise.all([
-        axios.get("/api/admin/products"),
-        axios.get("/api/admin/categories")
+        api.get("/api/admin/products"),
+        api.get("/api/admin/categories")
       ]);
       setProducts(productsResponse.data.products);
       setCategories(categoriesResponse.data.categories);
@@ -72,7 +72,7 @@ const AdminProductManagement: React.FC = () => {
 
   const handleCreate = async () => {
     try {
-      const response = await axios.post("/api/admin/products", form)
+      const response = await api.post("/api/admin/products", form)
       setProducts((prev) => [...prev, response.data.product])
       setIsCreateDialogOpen(false)
       setForm({
@@ -88,12 +88,12 @@ const AdminProductManagement: React.FC = () => {
       console.error("Error creating product:", error)
     }
   }
+
   const handleArchiveToggle = async (product:Product) => {
     try {
-        const res = await axios.post(
+        const res = await api.post(
             '/api/admin/product/toggle-archive',
-            { id: product.id }, 
-            {withCredentials:true }
+            { id: product.id }
           )
 
           setProducts((prevProducts) =>
@@ -105,16 +105,15 @@ const AdminProductManagement: React.FC = () => {
     } catch (error) {
         console.error("Error editing product:", error);
     }
-
   }
 
   const handleEdit = async () => {
     if (editingProductId === null) return
 
     try {
-      await axios.put(`/api/admin/products/${editingProductId}`, form)
+      await api.put(`/api/admin/products/${editingProductId}`, form)
 
-      const productResponse = await axios.get("/api/admin/products")
+      const productResponse = await api.get("/api/admin/products")
       setProducts(productResponse.data.products)
 
       setIsEditDialogOpen(false)
@@ -136,7 +135,7 @@ const AdminProductManagement: React.FC = () => {
 
   const handleEditProduct = async (product: Product) => {
     try {
-      const response = await axios.get(`/api/admin/products/${product.id}`);
+      const response = await api.get(`/api/admin/products/${product.id}`);
       const productData = response.data.product;
       
       setSelectedProduct(productData);
@@ -161,9 +160,7 @@ const AdminProductManagement: React.FC = () => {
         : '/api/admin/products';
 
       const method = selectedProduct ? 'put' : 'post';
-      const response = await axios[method](url, data, {
-        withCredentials: true,
-      });
+      const response = await api[method](url, data);
 
       const result = await response.data;
 
@@ -191,10 +188,9 @@ const AdminProductManagement: React.FC = () => {
 
   const handleArchive = async (product: Product) => {
     try {
-      const response = await axios.post(
+      const response = await api.post(
         '/api/admin/product/toggle-archive',
-        { id: product.id },
-        { withCredentials: true }
+        { id: product.id }
       );
 
       const result = await response.data;

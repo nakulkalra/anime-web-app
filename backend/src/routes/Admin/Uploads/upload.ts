@@ -3,10 +3,11 @@ import express, { Request, Response, Router } from 'express';
 import prisma from '../../../lib/prisma';
 import upload from '../../../middleware/uploads';
 import config from '../../../Config';
+import { adminAuthenticate } from '@/auth';
 
 const router: Router = express.Router();
 
-router.post("/api/admin/upload", upload.single("image"), async (req, res): Promise<void> => {
+router.post("/api/admin/upload", adminAuthenticate, upload.single("image"), async (req, res): Promise<void> => {
     try {
       if (!req.file) {
         res.status(400).json({ error: "No file uploaded" });
@@ -35,7 +36,7 @@ router.post("/api/admin/upload", upload.single("image"), async (req, res): Promi
   });
   
 // New GET endpoint to fetch all uploaded files
-router.get("/api/admin/uploads", async (req: Request, res: Response): Promise<void> => {
+router.get("/api/admin/uploads", adminAuthenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const files = await prisma.uploadedFile.findMany({
       orderBy: { createdAt: "desc" }, // Optional: Order by most recent files

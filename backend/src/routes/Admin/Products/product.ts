@@ -1,7 +1,7 @@
 import express, { Request, Response, Router } from 'express';
 import prisma from '../../../lib/prisma';
 import { ItemSize } from '@prisma/client';
-
+import { adminAuthenticate } from '@/auth';
 const router: Router = express.Router();
 
 /**
@@ -17,7 +17,7 @@ const handleError = (res: Response, error: any, message: string) => {
 };
 
 // Add New Product with Images and Sizes
-router.post('/api/admin/products', async (req, res): Promise<void> => {
+router.post('/api/admin/products', adminAuthenticate,  async (req, res): Promise<void> => {
   let { name, description, price, stock, categoryId, images, sizes } = req.body;
 
   price = parseFloat(price);
@@ -85,7 +85,7 @@ router.post('/api/admin/products', async (req, res): Promise<void> => {
   }
 });
 
-router.put('/api/admin/products/:id', async (req, res): Promise<void> => {
+router.put('/api/admin/products/:id',adminAuthenticate, async (req, res): Promise<void> => {
   const { id } = req.params;
   let { name, description, price, stock, categoryId, isArchived, images, sizes } = req.body;
 
@@ -190,7 +190,7 @@ router.put('/api/admin/products/:id', async (req, res): Promise<void> => {
 });
 
 // Get All Products
-router.get('/api/admin/products', async (req: Request, res: Response) => {
+router.get('/api/admin/products',adminAuthenticate, async (req: Request, res: Response) => {
   try {
     const products = await prisma.product.findMany({
       include: {
@@ -209,7 +209,7 @@ router.get('/api/admin/products', async (req: Request, res: Response) => {
 });
 
 // Get all categories
-router.get('/api/admin/categories', async (req: Request, res: Response) => {
+router.get('/api/admin/categories',adminAuthenticate, async (req: Request, res: Response) => {
   try {
     const categories = await prisma.category.findMany();
     res.status(200).json({ categories });
@@ -220,7 +220,7 @@ router.get('/api/admin/categories', async (req: Request, res: Response) => {
 });
 
 // Route to delete a specific product image
-router.post('/api/admin/product/toggle-archive', async (req, res): Promise<void> => {
+router.post('/api/admin/product/toggle-archive',adminAuthenticate, async (req, res): Promise<void> => {
   const { id } = req.body;
 
   if (!id) {
@@ -263,7 +263,7 @@ router.post('/api/admin/product/toggle-archive', async (req, res): Promise<void>
 });
 
 // Get Single Product by ID
-router.get('/api/admin/products/:id', async (req: Request, res: Response) => {
+router.get('/api/admin/products/:id',adminAuthenticate, async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (!id) {

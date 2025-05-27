@@ -1,11 +1,11 @@
 import express, { Request, Response, Router } from 'express';
 import prisma from '../../../lib/prisma';
 import { OrderStatus, Prisma } from '@prisma/client';
-
+import  { adminAuthenticate }  from '@/auth';
 const router: Router = express.Router();
 
 // Get all orders with pagination and search
-router.get('/api/admin/orders', async (req: Request, res: Response) => {
+router.get('/api/admin/orders', adminAuthenticate, async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
@@ -64,7 +64,7 @@ router.get('/api/admin/orders', async (req: Request, res: Response) => {
 });
 
 // Get single order details
-router.get('/api/admin/orders/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/api/admin/orders/:id', adminAuthenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const order = await prisma.order.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -97,7 +97,7 @@ router.get('/api/admin/orders/:id', async (req: Request, res: Response): Promise
 });
 
 // Update order status
-router.patch('/api/admin/orders/:id/status', async (req: Request, res: Response): Promise<void> => {
+router.patch('/api/admin/orders/:id/status', adminAuthenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const { status } = req.body;
     const orderId = parseInt(req.params.id);

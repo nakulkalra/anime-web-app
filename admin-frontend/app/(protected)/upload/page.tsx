@@ -5,6 +5,10 @@ import { Upload, Check, Copy, X, Loader2, ExternalLink } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+import api from '@/lib/axios';
 
 // Define interfaces for type safety
 interface FileAsset {
@@ -28,6 +32,7 @@ const FileUploadPage = () => {
   const [uploadedFile, setUploadedFile] = useState<FileAsset | null>(null);
   const [assets, setAssets] = useState<FileAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchAssets();
@@ -52,34 +57,55 @@ const FileUploadPage = () => {
   };
   
 
-  const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
 
-    setIsUploading(true);
+  const handleUpload = async () => {
+    if (!file) {
+      toast({
+        title: 'Error',
+        description: 'Please select a file to upload',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const formData = new FormData();
-    formData.append('image', file); // Changed from 'file' to 'image'
+    formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:4000/api/admin/upload', {
-        method: 'POST',
-        credentials: 'include', // Added credentials
-        body: formData,
+      setIsUploading(true);
+      const response = await api.post('/api/admin/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (response.status === 201) {
-        const data = await response.json() as UploadResponse;
-        setUploadedFile(data.file);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 5000);
+      if (response.data.success) {
+        toast({
+          title: 'Success',
+          description: 'File uploaded successfully',
+        });
+        setFile(null);
+        // Reset file input
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
         fetchAssets(); // Refresh the assets list
       }
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error('Upload error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload file',
+        variant: 'destructive',
+      });
     } finally {
       setIsUploading(false);
     }
-};
+  };
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -127,10 +153,11 @@ const FileUploadPage = () => {
               <span className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
                 {isUploading ? 'Uploading...' : 'Select File'}
               </span>
-              <input
+              <Input
                 type="file"
                 className="hidden"
-                onChange={handleUpload}
+                onChange={handleFileChange}
+                accept="image/*"
                 disabled={isUploading}
               />
             </label>
@@ -237,6 +264,16 @@ const FileUploadPage = () => {
           </Alert>
         </div>
       )}
+
+      <div className="mt-4">
+        <Button
+          onClick={handleUpload}
+          disabled={!file || isUploading}
+          className="w-full"
+        >
+          {isUploading ? 'Uploading...' : 'Upload'}
+        </Button>
+      </div>
     </div>
   );
 };

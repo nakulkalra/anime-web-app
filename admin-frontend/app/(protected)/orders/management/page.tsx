@@ -26,6 +26,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
+import api from '@/lib/axios';
+import { toast } from '@/hooks/use-toast';
 
 interface Order {
   id: number;
@@ -75,14 +77,18 @@ const OrderManagement = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
+      const response = await api.get(
         `/api/admin/orders?page=${page}&limit=10&search=${search}&status=${statusFilter}`
       );
-      const data = await response.json();
-      setOrders(data.orders);
-      setTotalPages(data.totalPages);
+      setOrders(response.data.orders);
+      setTotalPages(response.data.totalPages);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch orders',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -94,19 +100,24 @@ const OrderManagement = () => {
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
-      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
+      const response = await api.patch(`/api/admin/orders/${orderId}/status`, {
+        status: newStatus,
       });
       
-      if (response.ok) {
+      if (response.data.success) {
+        toast({
+          title: 'Success',
+          description: 'Order status updated successfully',
+        });
         fetchOrders();
       }
     } catch (error) {
       console.error('Failed to update order status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update order status',
+        variant: 'destructive',
+      });
     }
   };
 
